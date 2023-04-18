@@ -1,0 +1,7 @@
+(A) 2023-04-17 add options panel (recursive, file/dir)
+(A) 2023-04-17 add preview panel
+(A) 2023-04-17 add history telescope picker 
+(A) 2023-04-17 commands MurenToggle, MurenFresh, MurenHistory, MurenUnique... 
+(A) 2023-04-17 check no empty in left 
+(A) 2023-04-17 tests 
+(A) 2023-04-17 shortcut to populate the right from left or vice versa? 
