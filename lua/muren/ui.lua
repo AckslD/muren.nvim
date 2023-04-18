@@ -86,47 +86,6 @@ M.open_ui = function()
   bufs.left = vim.api.nvim_create_buf(false, true)
   bufs.right = vim.api.nvim_create_buf(false, true)
 
-  -- TODO remove
-  -- local lines_left = {
-  --   "foo_10",
-  --   "foo_11",
-  --   "foo_0",
-  --   "foo_1",
-  --   "foo_2",
-  --   "foo_3",
-  --   "foo_4",
-  --   "foo_5",
-  --   "foo_6",
-  --   "foo_7",
-  --   "foo_8",
-  --   "foo_9",
-  -- }
-  -- local lines_right = {
-  --   "bar_10",
-  --   "bar_11",
-  --   "bar_0",
-  --   "bar_1",
-  --   "bar_2",
-  --   "bar_3",
-  --   "bar_4",
-  --   "bar_5",
-  --   "bar_6",
-  --   "bar_7",
-  --   "bar_8",
-  --   "bar_9",
-  -- }
-  local lines_left = {
-    'foo',
-    'bar',
-  }
-  local lines_right = {
-    'bar',
-    'foo',
-  }
-  vim.api.nvim_buf_set_lines(bufs.left, 0, -1, true, lines_left)
-  vim.api.nvim_buf_set_lines(bufs.right, 0, -1, true, lines_right)
-
-
   local gheight = vim.api.nvim_list_uis()[1].height
   local gwidth = vim.api.nvim_list_uis()[1].width
 
@@ -160,6 +119,10 @@ M.open_ui = function()
     vim.keymap.set('n', 'q', M.close_ui, {buffer = buf})
     vim.keymap.set('n', '<Tab>', toggle_side, {buffer = buf})
     vim.keymap.set('n', '<CR>', do_replace, {buffer = buf})
+    vim.api.nvim_create_autocmd('WinClosed', {
+      callback = cleanup,
+      buffer = buf,
+    })
   end
   vim.api.nvim_create_autocmd('CursorMoved', {
     callback = function() align_cursor(wins.left) end,
@@ -168,16 +131,6 @@ M.open_ui = function()
   vim.api.nvim_create_autocmd('CursorMoved', {
     callback = function() align_cursor(wins.right) end,
     buffer = bufs.right,
-  })
-  vim.api.nvim_create_autocmd('WinClosed', {
-    callback = cleanup,
-    buffer = bufs.left,
-    pattern = wins.left
-  })
-  vim.api.nvim_create_autocmd('WinClosed', {
-    callback = cleanup,
-    buffer = bufs.right,
-    pattern = wins.right
   })
 end
 
