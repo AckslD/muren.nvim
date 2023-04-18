@@ -1,12 +1,15 @@
 local M = {}
 
+local utils = require('muren.utils')
+
 -- TODO should these be global to the module?
 local orig_buf
 local bufs = {}
 local wins = {}
 local other_win = {}
+local last_lines = {}
 
-local cleanup = function()
+local teardown = function()
   orig_buf = nil
   bufs = {}
   wins = {}
@@ -21,10 +24,16 @@ local toggle_side = function()
   vim.api.nvim_win_set_cursor(other_w, current_pos)
 end
 
+local set_cursor_row = function(win, row)
+  local buf = vim.api.nvim_win_get_buf(win)
+  row = utils.clip_val(1, row, vim.api.nvim_buf_line_count(buf))
+  vim.api.nvim_win_set_cursor(win, {row, 0})
+end
+
 local align_cursor = function(master_win)
   local current_pos = vim.api.nvim_win_get_cursor(master_win)
   local other_w = other_win[master_win]
-  vim.api.nvim_win_set_cursor(other_w, current_pos)
+  set_cursor_row(other_w, current_pos[1])
 end
 
 local multi_replace_recursive = function(buf, patterns, replacements, opts)
@@ -69,25 +78,44 @@ local multi_replace_non_recursive = function(buf, patterns, replacements, opts)
   end
 end
 
+local get_ui_lines = function()
+  return {
+    left = vim.api.nvim_buf_get_lines(bufs.left, 0, -1, true),
+    right = vim.api.nvim_buf_get_lines(bufs.right, 0, -1, true),
+  }
+end
+
+-- TODO move these to other module, not UI?
 local do_replace = function(opts)
   opts = opts or {}
-  local left_lines = vim.api.nvim_buf_get_lines(bufs.left, 0, -1, true)
-  local right_lines = vim.api.nvim_buf_get_lines(bufs.right, 0, -1, true)
+  local lines = get_ui_lines()
   if opts.recursive then
-    multi_replace_recursive(orig_buf, left_lines, right_lines, opts)
+    multi_replace_recursive(orig_buf, lines.left, lines.right, opts)
   else
-    multi_replace_non_recursive(orig_buf, left_lines, right_lines, opts)
+    multi_replace_non_recursive(orig_buf, lines.left, lines.right, opts)
+  end
+end
+
+local get_nvim_ui_size = function()
+  local first_ui = vim.api.nvim_list_uis()[1]
+  if first_ui then
+    return first_ui.height, first_ui.width
+  else
+    -- NOTE mostly when testing to have a default size
+    return 30, 150
   end
 end
 
 
-M.open_ui = function()
+M.open = function()
   orig_buf = vim.api.nvim_get_current_buf()
   bufs.left = vim.api.nvim_create_buf(false, true)
   bufs.right = vim.api.nvim_create_buf(false, true)
 
-  local gheight = vim.api.nvim_list_uis()[1].height
-  local gwidth = vim.api.nvim_list_uis()[1].width
+  vim.api.nvim_buf_set_lines(bufs.left, 0, -1, true, last_lines.left or {})
+  vim.api.nvim_buf_set_lines(bufs.right, 0, -1, true, last_lines.right or {})
+
+  local gheight, gwidth = get_nvim_ui_size()
 
   local width = 60
   local height = 10
@@ -116,11 +144,11 @@ M.open_ui = function()
   other_win[wins.right] = wins.left
 
   for _, buf in pairs(bufs) do
-    vim.keymap.set('n', 'q', M.close_ui, {buffer = buf})
+    vim.keymap.set('n', 'q', M.close, {buffer = buf})
     vim.keymap.set('n', '<Tab>', toggle_side, {buffer = buf})
     vim.keymap.set('n', '<CR>', do_replace, {buffer = buf})
     vim.api.nvim_create_autocmd('WinClosed', {
-      callback = cleanup,
+      callback = function() M.close() end,
       buffer = buf,
     })
   end
@@ -134,18 +162,40 @@ M.open_ui = function()
   })
 end
 
-M.close_ui = function()
-  for _, win in pairs(wins) do
-    vim.api.nvim_win_close(win, true)
+local save_lines = function()
+  last_lines = get_ui_lines()
+end
+
+local noautocmd = function(ignore, callback)
+  local current_eventignore = vim.o.eventignore
+  vim.o.eventignore = ignore
+  callback()
+  vim.o.eventignore = current_eventignore
+end
+
+M.close = function()
+  if not orig_buf then
+    return
   end
+  save_lines()
+  for _, win in pairs(wins) do
+    noautocmd('WinClosed,CursorMoved', function()
+      vim.api.nvim_win_close(win, true)
+    end)
+  end
+  teardown()
 end
 
 M.toggle = function()
   if orig_buf then
-    M.close_ui()
+    M.close()
   else
-    M.open_ui()
+    M.open()
   end
+end
+
+M.reset = function()
+  last_lines = {}
 end
 
 return M
