@@ -80,8 +80,8 @@ end
 
 local get_ui_lines = function()
   return {
-    left = vim.api.nvim_buf_get_lines(bufs.left, 0, -1, true),
-    right = vim.api.nvim_buf_get_lines(bufs.right, 0, -1, true),
+    patterns = vim.api.nvim_buf_get_lines(bufs.patterns, 0, -1, true),
+    replacements = vim.api.nvim_buf_get_lines(bufs.replacements, 0, -1, true),
   }
 end
 
@@ -90,9 +90,9 @@ local do_replace = function(opts)
   opts = opts or {}
   local lines = get_ui_lines()
   if opts.recursive then
-    multi_replace_recursive(orig_buf, lines.left, lines.right, opts)
+    multi_replace_recursive(orig_buf, lines.patterns, lines.replacements, opts)
   else
-    multi_replace_non_recursive(orig_buf, lines.left, lines.right, opts)
+    multi_replace_non_recursive(orig_buf, lines.patterns, lines.replacements, opts)
   end
 end
 
@@ -109,56 +109,99 @@ end
 
 M.open = function()
   orig_buf = vim.api.nvim_get_current_buf()
-  bufs.left = vim.api.nvim_create_buf(false, true)
-  bufs.right = vim.api.nvim_create_buf(false, true)
+  bufs.patterns = vim.api.nvim_create_buf(false, true)
+  bufs.replacements = vim.api.nvim_create_buf(false, true)
+  bufs.options = vim.api.nvim_create_buf(false, true)
+  bufs.preview = vim.api.nvim_create_buf(false, true)
 
-  vim.api.nvim_buf_set_lines(bufs.left, 0, -1, true, last_lines.left or {})
-  vim.api.nvim_buf_set_lines(bufs.right, 0, -1, true, last_lines.right or {})
+  vim.api.nvim_buf_set_lines(bufs.patterns, 0, -1, true, last_lines.patterns or {})
+  vim.api.nvim_buf_set_lines(bufs.replacements, 0, -1, true, last_lines.replacements or {})
+  vim.api.nvim_buf_set_lines(bufs.options, 0, -1, true, {
+    string.format(' buffer: %d', orig_buf),
+    ' recursive',
+    -- string.format('dir: %s', vim.fn.getcwd()),
+    ' all on line',
+  })
+  -- TODO handle these colors better and make configurable
+  vim.api.nvim_buf_add_highlight(bufs.options, -1, '@string', 0, 0, -1)
+  vim.api.nvim_buf_add_highlight(bufs.options, -1, '@variable.builtin', 1, 0, -1)
+  vim.api.nvim_buf_add_highlight(bufs.options, -1, '@string', 2, 0, -1)
 
   local gheight, gwidth = get_nvim_ui_size()
 
-  local width = 60
-  local height = 10
+  local patterns_width = 30
+  local patterns_height = 10
+  local options_width = 15
+  local preview_height = 12
 
-  wins.left = vim.api.nvim_open_win(bufs.left, true, {
+  local total_width = 2 * patterns_width + options_width + 4
+  local total_height = patterns_height + preview_height + 4
+
+  wins.patterns = vim.api.nvim_open_win(bufs.patterns, true, {
     relative = 'editor',
-    width = width / 2 - 1,
-    height = height,
-    anchor = 'SW',
-    row = (gheight + height) / 2,
-    col = (gwidth - width) / 2,
+    width = patterns_width,
+    height = patterns_height,
+    row = (gheight - total_height) / 2,
+    col = (gwidth - total_width) / 2,
     style = 'minimal',
     border = {"┏", "━" ,"┳", "┃", "┻", "━", "┗", "┃"},
+    title = {{'patterns', 'Number'}},
+    title_pos = 'center',
   })
-  wins.right = vim.api.nvim_open_win(bufs.right, false, {
+  wins.replacements = vim.api.nvim_open_win(bufs.replacements, false, {
     relative = 'editor',
-    width = width / 2 - 1,
-    height = height,
-    anchor = 'SW',
-    row = (gheight + height) / 2,
-    col = gwidth / 2,
+    width = patterns_width,
+    height = patterns_height,
+    row = (gheight - total_height) / 2,
+    col = (gwidth - total_width) / 2 + patterns_width + 1,
+    style = 'minimal',
+    border = {"┳", "━" ,"┳", "┃", "┻", "━", "┻", "┃"},
+    title = {{'replacements', 'Number'}},
+    title_pos = 'center',
+  })
+  other_win[wins.patterns] = wins.replacements
+  other_win[wins.replacements] = wins.patterns
+  wins.options = vim.api.nvim_open_win(bufs.options, false, {
+    relative = 'editor',
+    width = options_width,
+    height = patterns_height,
+    row = (gheight - total_height) / 2,
+    col = (gwidth - total_width) / 2 + 2 * (patterns_width + 1),
     style = 'minimal',
     border = {"┳", "━" ,"┓", "┃", "┛", "━", "┻", "┃"},
+    title = {{'options', 'Comment'}},
+    title_pos = 'center',
   })
-  other_win[wins.left] = wins.right
-  other_win[wins.right] = wins.left
+  wins.preview = vim.api.nvim_open_win(bufs.preview, false, {
+    relative = 'editor',
+    width = total_width - 2,
+    height = preview_height,
+    row = (gheight - total_height) / 2 + patterns_height + 2,
+    col = (gwidth - total_width) / 2,
+    style = 'minimal',
+    border = {"┏", "━" ,"┓", "┃", "┛", "━", "└", "┃"},
+    title = {{'preview', 'Comment'}},
+    title_pos = 'center',
+  })
 
   for _, buf in pairs(bufs) do
     vim.keymap.set('n', 'q', M.close, {buffer = buf})
-    vim.keymap.set('n', '<Tab>', toggle_side, {buffer = buf})
     vim.keymap.set('n', '<CR>', do_replace, {buffer = buf})
     vim.api.nvim_create_autocmd('WinClosed', {
       callback = function() M.close() end,
       buffer = buf,
     })
   end
+  for _, buf in ipairs({bufs.patterns, bufs.replacements}) do
+    vim.keymap.set('n', '<Tab>', toggle_side, {buffer = buf})
+  end
   vim.api.nvim_create_autocmd('CursorMoved', {
-    callback = function() align_cursor(wins.left) end,
-    buffer = bufs.left,
+    callback = function() align_cursor(wins.patterns) end,
+    buffer = bufs.patterns,
   })
   vim.api.nvim_create_autocmd('CursorMoved', {
-    callback = function() align_cursor(wins.right) end,
-    buffer = bufs.right,
+    callback = function() align_cursor(wins.replacements) end,
+    buffer = bufs.replacements,
   })
 end
 
