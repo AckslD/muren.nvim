@@ -2,12 +2,31 @@ local M = {}
 
 local utils = require('muren.utils')
 
+local default_options = {
+  recursive = false,
+  all_on_line = true,
+}
+local options_order = {
+  'buffer',
+  'recursive',
+  'all_on_line',
+}
+local hl = {
+  options = {
+    on = '@string',
+    off = '@variable.builtin',
+  },
+}
+
 -- TODO should these be global to the module?
 local orig_buf
 local bufs = {}
 local wins = {}
 local other_win = {}
 local last_lines = {}
+local options = {
+  buffer = nil,
+}
 
 local teardown = function()
   orig_buf = nil
@@ -106,9 +125,39 @@ local get_nvim_ui_size = function()
   end
 end
 
+local populate_options_buf = function()
+  local lines = {}
+  local highlights = {}
+  for _, name in ipairs(options_order) do
+    local value = options[name]
+    local prefix
+    if value then
+      prefix = ''
+      table.insert(highlights, hl.options.on)
+    else
+      prefix = ''
+      table.insert(highlights, hl.options.off)
+    end
+    if type(value) == 'boolean' then
+      table.insert(lines, string.format('%s %s', prefix, name))
+    else
+      table.insert(lines, string.format('%s %s: %s', prefix, name, value))
+    end
+  end
+  vim.api.nvim_buf_set_lines(bufs.options, 0, -1, true, lines)
+  for i, highlight in ipairs(highlights) do
+    vim.api.nvim_buf_add_highlight(bufs.options, -1, highlight, i - 1, 0, -1)
+  end
+end
 
 M.open = function()
   orig_buf = vim.api.nvim_get_current_buf()
+  options = {}
+  for name, value in pairs(default_options) do
+    options[name] = value
+  end
+  options.buffer = orig_buf
+
   bufs.patterns = vim.api.nvim_create_buf(false, true)
   bufs.replacements = vim.api.nvim_create_buf(false, true)
   bufs.options = vim.api.nvim_create_buf(false, true)
@@ -116,16 +165,7 @@ M.open = function()
 
   vim.api.nvim_buf_set_lines(bufs.patterns, 0, -1, true, last_lines.patterns or {})
   vim.api.nvim_buf_set_lines(bufs.replacements, 0, -1, true, last_lines.replacements or {})
-  vim.api.nvim_buf_set_lines(bufs.options, 0, -1, true, {
-    string.format(' buffer: %d', orig_buf),
-    ' recursive',
-    -- string.format('dir: %s', vim.fn.getcwd()),
-    ' all on line',
-  })
-  -- TODO handle these colors better and make configurable
-  vim.api.nvim_buf_add_highlight(bufs.options, -1, '@string', 0, 0, -1)
-  vim.api.nvim_buf_add_highlight(bufs.options, -1, '@variable.builtin', 1, 0, -1)
-  vim.api.nvim_buf_add_highlight(bufs.options, -1, '@string', 2, 0, -1)
+  populate_options_buf()
 
   local gheight, gwidth = get_nvim_ui_size()
 
