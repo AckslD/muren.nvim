@@ -1,9 +1,7 @@
-(A) 2023-04-17 add options panel (recursive, file/dir)
 (A) 2023-04-17 add preview panel
 (A) 2023-04-17 add history telescope picker 
-(A) 2023-04-17 commands MurenToggle, MurenFresh, MurenHistory, MurenUnique... 
-(A) 2023-04-17 check no empty in left 
-(A) 2023-04-17 tests 
-(A) 2023-04-17 shortcut to populate the right from left or vice versa? 
-(A) 2023-04-18 global `g` option to search 
+(A) 2023-04-17 commands MurenHistory, MurenUnique... 
+(A) 2023-04-17 more tests 
 (A) 2023-04-18 write readme and proper docs 
+(A) 2023-04-19 don't error when first empty line in patterns, how to handle this? maybe still not allow it but ignore in preview?
+(A) 2023-04-19 fix align issue when less rows in replacements 
