@@ -1,37 +1,31 @@
 local M = {}
-local utils = require('muren.utils')
 
-local default_options = {
-  recursive = false,
-  all_on_line = true,
-}
-local options_order = {
-  'buffer',
-  'recursive',
-  'all_on_line',
-}
-local hl = {
-  options = {
-    on = '@string',
-    off = '@variable.builtin',
-  },
-}
+local utils = require('muren.utils')
+local options = require('muren.options')
+local search = require('muren.search')
 
 local last_lines = {}
 
 -- TODO should these be global to the module?
 local is_open = false
+local preview_open = false
 local bufs = {}
 local wins = {}
 local other_win = {}
 local last_input_win
-local options = {}
 
 local teardown = function()
+  preview_open = false
   bufs = {}
   wins = {}
   other_win = {}
   last_input_win = nil
+end
+
+local set_cursor_row = function(win, row)
+  local buf = vim.api.nvim_win_get_buf(win)
+  row = utils.clip_val(1, row, vim.api.nvim_buf_line_count(buf))
+  vim.api.nvim_win_set_cursor(win, {row, 0})
 end
 
 local toggle_side = function()
@@ -39,7 +33,7 @@ local toggle_side = function()
   local current_pos = vim.api.nvim_win_get_cursor(current_win)
   local other_w = other_win[current_win]
   vim.api.nvim_set_current_win(other_w)
-  vim.api.nvim_win_set_cursor(other_w, current_pos)
+  set_cursor_row(other_w, current_pos[1])
 end
 
 local toggle_options_focus = function()
@@ -65,15 +59,15 @@ end
 local populate_options_buf = function()
   local lines = {}
   local highlights = {}
-  for _, name in ipairs(options_order) do
-    local value = options[name]
+  for _, name in ipairs(options.order) do
+    local value = options.values[name]
     local prefix
     if value then
       prefix = ''
-      table.insert(highlights, hl.options.on)
+      table.insert(highlights, options.hl.options.on)
     else
       prefix = ''
-      table.insert(highlights, hl.options.off)
+      table.insert(highlights, options.hl.options.off)
     end
     if type(value) == 'boolean' then
       table.insert(lines, string.format('%s %s', prefix, name))
@@ -84,92 +78,6 @@ local populate_options_buf = function()
   vim.api.nvim_buf_set_lines(bufs.options, 0, -1, true, lines)
   for i, highlight in ipairs(highlights) do
     vim.api.nvim_buf_add_highlight(bufs.options, -1, highlight, i - 1, 0, -1)
-  end
-end
-
-local toggle_option_under_cursor = function()
-  local option_idx = vim.api.nvim_win_get_cursor(0)[1]
-  local option_name = options_order[option_idx]
-  local current_value = options[option_name]
-  if type(current_value) == 'boolean' then
-    options[option_name] = not current_value
-    populate_options_buf()
-  else
-    if option_name == 'buffer' then
-      vim.ui.select(list_loaded_bufs(), {
-        prompt = 'Pick buffer to apply substitutions:',
-        format_item = function(buf)
-          return string.format('%d: %s', buf, vim.api.nvim_buf_get_name(buf))
-        end,
-      }, function(buf)
-          if buf then
-            options.buffer = buf
-            populate_options_buf()
-          end
-      end)
-    end
-  end
-end
-
-local set_cursor_row = function(win, row)
-  local buf = vim.api.nvim_win_get_buf(win)
-  row = utils.clip_val(1, row, vim.api.nvim_buf_line_count(buf))
-  vim.api.nvim_win_set_cursor(win, {row, 0})
-end
-
-local align_cursor = function(master_win)
-  local current_pos = vim.api.nvim_win_get_cursor(master_win)
-  local other_w = other_win[master_win]
-  set_cursor_row(other_w, current_pos[1])
-end
-
-local assert_non_empty_pattern = function(pattern)
-  if pattern == '' then
-    error("pattern cannot be empty")
-  end
-end
-
-local multi_replace_recursive = function(buf, patterns, replacements, opts)
-  for i, pattern in ipairs(patterns) do
-    assert_non_empty_pattern(pattern)
-    local replacement = replacements[i] or ''
-    vim.api.nvim_buf_call(buf, function()
-      vim.cmd(string.format(
-        '%%s/%s/%s/%s',
-        pattern,
-        replacement,
-        opts.replace_opt_chars or ''
-      ))
-    end)
-  end
-end
-
-local multi_replace_non_recursive = function(buf, patterns, replacements, opts)
-  local replacement_per_placeholder = {}
-  for i, pattern in ipairs(patterns) do
-    assert_non_empty_pattern(pattern)
-    local placeholder = string.format('___MUREN___%d___', i)
-    local replacement = replacements[i] or ''
-    replacement_per_placeholder[placeholder] = replacement
-    vim.api.nvim_buf_call(buf, function()
-      vim.cmd(string.format(
-        '%%s/%s/%s/%s',
-        pattern,
-        placeholder,
-        opts.replace_opt_chars or ''
-      ))
-    end)
-  end
-  -- TODO if we would have eg 'c' replace_opt_chars I guess we don't want it here?
-  for placeholder, replacement in pairs(replacement_per_placeholder) do
-    vim.api.nvim_buf_call(buf, function()
-      vim.cmd(string.format(
-        '%%s/%s/%s/%s',
-        placeholder,
-        replacement,
-        opts.replace_opt_chars or ''
-      ))
-    end)
   end
 end
 
@@ -198,66 +106,26 @@ local get_ui_lines = function()
   end
 end
 
--- TODO move these to other module, not UI?
-local do_replace_with_patterns = function(buf, patterns, replacements)
-  local opts = {}
-  if options.all_on_line then
-    opts.replace_opt_chars = 'g'
-  end
-  if options.recursive then
-    multi_replace_recursive(buf, patterns, replacements, opts)
-  else
-    multi_replace_non_recursive(buf, patterns, replacements, opts)
-  end
-end
-
-local do_replace = function()
-  local lines = get_ui_lines()
-  do_replace_with_patterns(options.buffer, lines.patterns, lines.replacements)
-end
-
-local find_all_line_matches = function(pattern)
-  local current_cursor = vim.api.nvim_win_get_cursor(0)
-  vim.cmd('normal G$')
-  local flags = 'w'
-  local lines = {}
-  while true do
-    local line = vim.fn.search(pattern, flags)
-    if line == 0 then
-      break
-    end
-    table.insert(lines, line)
-    flags = 'W'
-  end
-  vim.api.nvim_win_set_cursor(0, current_cursor)
-  return lines
-end
-
-local find_all_line_matches_in_buf = function(buf, pattern)
-  local lines
-  vim.api.nvim_buf_call(buf, function()
-    lines = find_all_line_matches(pattern)
-  end)
-  return lines
-end
-
 local update_preview = function()
+  if not preview_open then
+    return
+  end
   local ui_lines = get_ui_lines()
   local relevant_line_nums = {}
   for _, pattern in ipairs(ui_lines.patterns) do
-    for _, line in ipairs(find_all_line_matches_in_buf(options.buffer, pattern)) do
+    for _, line in ipairs(search.find_all_line_matches_in_buf(options.values.buffer, pattern)) do
       relevant_line_nums[line - 1] = true
     end
   end
   local relevant_lines = {}
   for line_num, _ in pairs(relevant_line_nums) do
-    local lines = vim.api.nvim_buf_get_lines(options.buffer, line_num, line_num + 1, false)
+    local lines = vim.api.nvim_buf_get_lines(options.values.buffer, line_num, line_num + 1, false)
     if #lines > 0 then
       table.insert(relevant_lines, lines[1])
     end
   end
   vim.api.nvim_buf_set_lines(bufs.preview, 0, -1, true, relevant_lines)
-  do_replace_with_patterns(bufs.preview, ui_lines.patterns, ui_lines.replacements)
+  search.do_replace_with_patterns(bufs.preview, ui_lines.patterns, ui_lines.replacements)
 end
 
 local get_nvim_ui_size = function()
@@ -270,19 +138,94 @@ local get_nvim_ui_size = function()
   end
 end
 
+local open_preview = function()
+  if preview_open then
+    return
+  end
+  local gheight, gwidth = get_nvim_ui_size()
+  wins.preview = vim.api.nvim_open_win(bufs.preview, false, {
+    relative = 'editor',
+    width = options.values.total_width - 2,
+    height = options.values.preview_height,
+    row = (gheight - options.values.total_height) / 2 + options.values.patterns_height + 2,
+    col = (gwidth - options.values.total_width) / 2,
+    style = 'minimal',
+    border = {"┏", "━" ,"┓", "┃", "┛", "━", "└", "┃"},
+    title = {{'preview', 'Comment'}},
+    title_pos = 'center',
+  })
+  preview_open = true
+end
+
+local close_preview = function()
+  if not preview_open then
+    return
+  end
+  vim.api.nvim_win_close(wins.preview, true)
+  preview_open = false
+end
+
+local toggle_option_under_cursor = function()
+  local option_idx = vim.api.nvim_win_get_cursor(0)[1]
+  local option_name = options.order[option_idx]
+  local current_value = options.values[option_name]
+  if type(current_value) == 'boolean' then
+    options.values[option_name] = not current_value
+    populate_options_buf()
+    if option_name == 'preview' then
+      if not current_value then
+        open_preview()
+      else
+        close_preview()
+      end
+    else
+      update_preview()
+    end
+  else
+    if option_name == 'buffer' then
+      vim.ui.select(list_loaded_bufs(), {
+        prompt = 'Pick buffer to apply substitutions:',
+        format_item = function(buf)
+          return string.format('%d: %s', buf, vim.api.nvim_buf_get_name(buf))
+        end,
+      }, function(buf)
+          if buf then
+            options.values.buffer = buf
+            populate_options_buf()
+            update_preview()
+          end
+      end)
+    end
+  end
+end
+
+local noautocmd = function(ignore, callback)
+  local current_eventignore = vim.o.eventignore
+  vim.o.eventignore = ignore
+  callback()
+  vim.o.eventignore = current_eventignore
+end
+
+local align_cursor = function(master_win)
+  local current_pos = vim.api.nvim_win_get_cursor(master_win)
+  local other_w = other_win[master_win]
+  noautocmd('CursorMoved', function()
+    set_cursor_row(other_w, current_pos[1])
+  end)
+end
+
+local do_replace = function()
+  local lines = get_ui_lines()
+  search.do_replace_with_patterns(options.values.buffer, lines.patterns, lines.replacements)
+end
+
 M.open = function(opts)
   if is_open then
     return
   end
   is_open = true
   opts = opts or {}
-
-  for name, value in pairs(default_options) do
-    if options[name] == nil or opts.fresh then
-      options[name] = value
-    end
-  end
-  options.buffer = vim.api.nvim_get_current_buf()
+  options.populate()
 
   bufs.patterns = vim.api.nvim_create_buf(false, true)
   bufs.replacements = vim.api.nvim_create_buf(false, true)
@@ -297,20 +240,12 @@ M.open = function(opts)
 
   local gheight, gwidth = get_nvim_ui_size()
 
-  local patterns_width = 30
-  local patterns_height = 10
-  local options_width = 15
-  local preview_height = 12
-
-  local total_width = 2 * patterns_width + options_width + 4
-  local total_height = patterns_height + preview_height + 4
-
   wins.patterns = vim.api.nvim_open_win(bufs.patterns, true, {
     relative = 'editor',
-    width = patterns_width,
-    height = patterns_height,
-    row = (gheight - total_height) / 2,
-    col = (gwidth - total_width) / 2,
+    width = options.values.patterns_width,
+    height = options.values.patterns_height,
+    row = (gheight - options.values.total_height) / 2,
+    col = (gwidth - options.values.total_width) / 2,
     style = 'minimal',
     border = {"┏", "━" ,"┳", "┃", "┻", "━", "┗", "┃"},
     title = {{'patterns', 'Number'}},
@@ -318,10 +253,10 @@ M.open = function(opts)
   })
   wins.replacements = vim.api.nvim_open_win(bufs.replacements, false, {
     relative = 'editor',
-    width = patterns_width,
-    height = patterns_height,
-    row = (gheight - total_height) / 2,
-    col = (gwidth - total_width) / 2 + patterns_width + 1,
+    width = options.values.patterns_width,
+    height = options.values.patterns_height,
+    row = (gheight - options.values.total_height) / 2,
+    col = (gwidth - options.values.total_width) / 2 + options.values.patterns_width + 1,
     style = 'minimal',
     border = {"┳", "━" ,"┳", "┃", "┻", "━", "┻", "┃"},
     title = {{'replacements', 'Number'}},
@@ -331,28 +266,20 @@ M.open = function(opts)
   other_win[wins.replacements] = wins.patterns
   wins.options = vim.api.nvim_open_win(bufs.options, false, {
     relative = 'editor',
-    width = options_width,
-    height = patterns_height,
-    row = (gheight - total_height) / 2,
-    col = (gwidth - total_width) / 2 + 2 * (patterns_width + 1),
+    width = options.values.options_width,
+    height = options.values.patterns_height,
+    row = (gheight - options.values.total_height) / 2,
+    col = (gwidth - options.values.total_width) / 2 + 2 * (options.values.patterns_width + 1),
     style = 'minimal',
     border = {"┳", "━" ,"┓", "┃", "┛", "━", "┻", "┃"},
     title = {{'options', 'Comment'}},
     title_pos = 'center',
   })
-  wins.preview = vim.api.nvim_open_win(bufs.preview, false, {
-    relative = 'editor',
-    width = total_width - 2,
-    height = preview_height,
-    row = (gheight - total_height) / 2 + patterns_height + 2,
-    col = (gwidth - total_width) / 2,
-    style = 'minimal',
-    border = {"┏", "━" ,"┓", "┃", "┛", "━", "└", "┃"},
-    title = {{'preview', 'Comment'}},
-    title_pos = 'center',
-  })
+  if options.values.preview then
+    open_preview()
+  end
 
-  for _, buf in pairs(bufs) do
+  for _, buf in ipairs({bufs.patterns, bufs.replacements, bufs.options}) do
     vim.keymap.set('n', 'q', M.close, {buffer = buf})
     vim.keymap.set('n', '<C-s>', toggle_options_focus, {buffer = buf})
     vim.api.nvim_create_autocmd('WinClosed', {
@@ -383,13 +310,6 @@ local save_lines = function()
   last_lines = get_ui_lines()
 end
 
-local noautocmd = function(ignore, callback)
-  local current_eventignore = vim.o.eventignore
-  vim.o.eventignore = ignore
-  callback()
-  vim.o.eventignore = current_eventignore
-end
-
 M.close = function()
   if not is_open then
     return
@@ -397,9 +317,11 @@ M.close = function()
   is_open = false
   save_lines()
   for _, win in pairs(wins) do
-    noautocmd('WinClosed,CursorMoved', function()
-      vim.api.nvim_win_close(win, true)
-    end)
+    if vim.api.nvim_win_is_valid(win) then
+      noautocmd('WinClosed,CursorMoved', function()
+        vim.api.nvim_win_close(win, true)
+      end)
+    end
   end
   teardown()
 end
