@@ -1,32 +1,41 @@
 local M = {}
 
--- TODO expose options and settings
-local default_options = {
+M.default = {
+  -- general
+  create_commands = true,
+  -- default togglable options
   recursive = false,
   all_on_line = true,
   preview = true,
+  -- ui sizes
   patterns_width = 30,
   patterns_height = 10,
   options_width = 15,
   preview_height = 12,
-}
-M.order = {
-  'buffer',
-  'recursive',
-  'all_on_line',
-  'preview',
-}
-M.hl = {
-  options = {
-    on = '@string',
-    off = '@variable.builtin',
+  -- options order in ui
+  order = {
+    'buffer',
+    'recursive',
+    'all_on_line',
+    'preview',
+  },
+  -- highlights used for options ui
+  hl = {
+    options = {
+      on = '@string',
+      off = '@variable.builtin',
+    },
   },
 }
+
+M.update = function(opts)
+  M.default = vim.tbl_deep_extend('force', M.default, opts)
+end
 
 M.values = {}
 
 M.populate = function(opts)
-  for name, value in pairs(default_options) do
+  for name, value in pairs(M.default) do
     if M.values[name] == nil or opts.fresh then
       M.values[name] = value
     end

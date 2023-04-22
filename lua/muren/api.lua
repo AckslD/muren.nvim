@@ -1,21 +1,23 @@
 local M = {}
 
-local ui = require('muren.ui')
-
 M.open_ui = function()
-  ui.open()
+  require('muren.ui').open()
 end
 
 M.close_ui = function()
-  ui.close()
+  require('muren.ui').close()
 end
 
 M.toggle_ui = function()
-  ui.toggle()
+  require('muren.ui').toggle()
 end
 
 M.open_fresh_ui = function()
-  ui.open({fresh = true})
+  require('muren.ui').open({fresh = true})
+end
+
+M.open_unique_ui = function()
+  require('muren.ui').open_unique()
 end
 
 return M

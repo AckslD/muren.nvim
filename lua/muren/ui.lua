@@ -59,15 +59,15 @@ end
 local populate_options_buf = function()
   local lines = {}
   local highlights = {}
-  for _, name in ipairs(options.order) do
+  for _, name in ipairs(options.values.order) do
     local value = options.values[name]
     local prefix
     if value then
       prefix = ''
-      table.insert(highlights, options.hl.options.on)
+      table.insert(highlights, options.values.hl.options.on)
     else
       prefix = ''
-      table.insert(highlights, options.hl.options.off)
+      table.insert(highlights, options.values.hl.options.off)
     end
     if type(value) == 'boolean' then
       table.insert(lines, string.format('%s %s', prefix, name))
@@ -167,7 +167,7 @@ end
 
 local toggle_option_under_cursor = function()
   local option_idx = vim.api.nvim_win_get_cursor(0)[1]
-  local option_name = options.order[option_idx]
+  local option_name = options.values.order[option_idx]
   local current_value = options.values[option_name]
   if type(current_value) == 'boolean' then
     options.values[option_name] = not current_value
@@ -225,14 +225,16 @@ M.open = function(opts)
   end
   is_open = true
   opts = opts or {}
-  options.populate()
+  options.populate(opts)
 
   bufs.patterns = vim.api.nvim_create_buf(false, true)
   bufs.replacements = vim.api.nvim_create_buf(false, true)
   bufs.options = vim.api.nvim_create_buf(false, true)
   bufs.preview = vim.api.nvim_create_buf(false, true)
 
-  if not opts.fresh then
+  if opts.patterns then
+    vim.api.nvim_buf_set_lines(bufs.patterns, 0, -1, true, opts.patterns)
+  elseif not opts.fresh then
     vim.api.nvim_buf_set_lines(bufs.patterns, 0, -1, true, last_lines.patterns or {})
     vim.api.nvim_buf_set_lines(bufs.replacements, 0, -1, true, last_lines.replacements or {})
   end
@@ -304,6 +306,10 @@ M.open = function(opts)
     callback = function() align_cursor(wins.replacements) end,
     buffer = bufs.replacements,
   })
+end
+
+M.open_unique = function()
+  M.open({patterns = search.get_unique_last_search_matches()})
 end
 
 local save_lines = function()

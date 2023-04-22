@@ -85,4 +85,18 @@ M.do_replace_with_patterns = function(buf, patterns, replacements)
   end
 end
 
+M.get_unique_last_search_matches = function(opts)
+  opts = opts or {}
+  cmd_silent(string.format('lvim %s %%', opts.pattern or '//'))
+  local loc_items = vim.fn.getloclist(0)
+  local unique_matches = {}
+  for _, loc_item in ipairs(loc_items) do
+    local match_text = loc_item.text:sub(loc_item.col, loc_item.end_col - 1)
+    unique_matches[match_text] = true
+  end
+  unique_matches = vim.tbl_keys(unique_matches)
+  table.sort(unique_matches)
+  return unique_matches
+end
+
 return M

@@ -1,7 +1,7 @@
 x 2023-04-22 2023-04-17 add preview panel
-(A) 2023-04-17 add history telescope picker 
-(A) 2023-04-17 commands MurenHistory, MurenUnique... 
-(A) 2023-04-17 more tests 
+(A) 2023-04-17 add history telescope picker and MurenHistory cmd
+x 2023-04-22 2023-04-17 commands MurenUnique... 
+x 2023-04-22 2023-04-17 more tests 
 (A) 2023-04-18 write readme and proper docs 
 x 2023-04-22 2023-04-19 don't error when first empty line in patterns, how to handle this? maybe still not allow it but ignore in preview?
 x 2023-04-22 2023-04-19 fix align issue when less rows in replacements 
