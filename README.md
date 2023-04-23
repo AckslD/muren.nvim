@@ -51,6 +51,16 @@ By default the following commands are created:
 * `MurenClose`: Open the UI.
 * `MurenFresh`: Open the UI fresh, ie reset all settings and buffers.
 * `MurenUnique`: Open the UI populating the patterns with all unique matches of the last search.
+  See [examples](#showcase) below for why this can be very powerful.
+
+The UI uses the following normal mode keymaps (buffer local):
+* `q`: Quit UI.
+* `<Tab>`: Swap between _patterns_ and _replacements_ pane.
+* `<C-s>`: Swap between _patterns_/_replacements_ and _options_ pane.
+* `<CR>`: Apply replacements (only in _patterns_ or _replacements_ pane).
+* `<CR>`: Toggle/pick options (only in _options_ pane).
+
+See below for how to configure there.
 
 Pass `create_commands = false` to `require('muren').setup` to not create them.
 
@@ -72,6 +82,14 @@ Pass settings to `require('muren').setup`. The current defaults are:
   recursive = false,
   all_on_line = true,
   preview = true,
+  -- keymaps
+  keys = {
+    close = 'q',
+    toggle_side = '<Tab>',
+    toggle_options_focus = '<C-s>',
+    toggle_option_under_cursor = '<CR>',
+    do_replace = '<CR>',
+  },
   -- ui sizes
   patterns_width = 30,
   patterns_height = 10,

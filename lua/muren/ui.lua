@@ -281,23 +281,24 @@ M.open = function(opts)
     open_preview()
   end
 
+  local keys = options.values.keys
   for _, buf in ipairs({bufs.patterns, bufs.replacements, bufs.options}) do
-    vim.keymap.set('n', 'q', M.close, {buffer = buf})
-    vim.keymap.set('n', '<C-s>', toggle_options_focus, {buffer = buf})
+    vim.keymap.set('n', keys.close, M.close, {buffer = buf})
+    vim.keymap.set('n', keys.toggle_options_focus, toggle_options_focus, {buffer = buf})
     vim.api.nvim_create_autocmd('WinClosed', {
       callback = function() M.close() end,
       buffer = buf,
     })
   end
   for _, buf in ipairs({bufs.patterns, bufs.replacements}) do
-    vim.keymap.set('n', '<CR>', do_replace, {buffer = buf})
-    vim.keymap.set('n', '<Tab>', toggle_side, {buffer = buf})
+    vim.keymap.set('n', keys.do_replace, do_replace, {buffer = buf})
+    vim.keymap.set('n', keys.toggle_side, toggle_side, {buffer = buf})
     vim.api.nvim_create_autocmd({'TextChanged', 'TextChangedI'}, {
       callback = update_preview,
       buffer = buf,
     })
   end
-  vim.keymap.set('n', '<CR>', toggle_option_under_cursor, {buffer = bufs.options})
+  vim.keymap.set('n', keys.toggle_option_under_cursor, toggle_option_under_cursor, {buffer = bufs.options})
   vim.api.nvim_create_autocmd('CursorMoved', {
     callback = function() align_cursor(wins.patterns) end,
     buffer = bufs.patterns,

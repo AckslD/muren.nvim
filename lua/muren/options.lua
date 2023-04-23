@@ -7,6 +7,14 @@ M.default = {
   recursive = false,
   all_on_line = true,
   preview = true,
+  -- keymaps
+  keys = {
+    close = 'q',
+    toggle_side = '<Tab>',
+    toggle_options_focus = '<C-s>',
+    toggle_option_under_cursor = '<CR>',
+    do_replace = '<CR>',
+  },
   -- ui sizes
   patterns_width = 30,
   patterns_height = 10,
