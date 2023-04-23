@@ -139,6 +139,8 @@ https://user-images.githubusercontent.com/23341710/233819184-df374312-8947-4b50-
 
 - [ ] Store history of batches replacements and have a telescope picker to chose between them, previewing the list of patterns and replacements.
 - [ ] Possibly calculate the preview asynchronously in case it makes the UI sluggish?
+- [ ] Support replacements in CWD instead of single buffer.
+- [ ] Apply filetype highlights in preview buffer?
 
 ## Etymology
 
