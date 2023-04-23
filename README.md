@@ -2,6 +2,8 @@
 
 Neovim plugin for doing multiple search and replace with ease.
 
+:warning: This plugins is in its early days so feel free to open issues if you stumble on issues, have ideas or are missing some things to configure.
+
 ## What does this plugin do
 
 Sometimes you may want to do some number of search-and-replacements that follow a certain structure.
@@ -23,22 +25,92 @@ a_2 | z
 ```
 where you can use all your vim-skills to populate the buffers (eg `<C-v>`, `<C-a>` etc etc).
 
-See [examples] below for some screencasts of how this looks like with `muren`.
+See [examples](#showcase) below for some screencasts of how this looks like with `muren`.
 
 ## Features
-* TODO
+* Define and apply multiple replacements.
+* Toggle between recursive and non-recursive replacements (eg to sway names), see [showcases](#showcase).
+* Interactively changes options, including which buffer to apply to.
+* Preview changes.
+* Keep patterns and options when toggling ui.
 
 ## Installation
-TODO
+Use your favorite plugin manager, eg with `lazy.nvim`:
+```lua
+{
+  'AckslD/muren.nvim',
+  config = true,
+}
+```
 
 ## Usage
-TODO
+By default the following commands are created:
+
+* `MurenToggle`: Toggle the UI.
+* `MurenOpen`: Open the UI.
+* `MurenClose`: Open the UI.
+* `MurenFresh`: Open the UI fresh, ie reset all settings and buffers.
+* `MurenUnique`: Open the UI populating the patterns with all unique matches of the last search.
+
+Pass `create_commands = false` to `require('muren').setup` to not create them.
+
+You can also access this using lua as the following functions:
+
+* `require('muren.api').toggle_ui`
+* `require('muren.api').open_ui`
+* `require('muren.api').close_ui`
+* `require('muren.api').open_fresh_ui`
+* `require('muren.api').open_unique_ui`
 
 ## Configuration
-TODO
+Pass settings to `require('muren').setup`. The current defaults are:
+```lua
+{
+  -- general
+  create_commands = true,
+  -- default togglable options
+  recursive = false,
+  all_on_line = true,
+  preview = true,
+  -- ui sizes
+  patterns_width = 30,
+  patterns_height = 10,
+  options_width = 15,
+  preview_height = 12,
+  -- options order in ui
+  order = {
+    'buffer',
+    'recursive',
+    'all_on_line',
+    'preview',
+  },
+  -- highlights used for options ui
+  hl = {
+    options = {
+      on = '@string',
+      off = '@variable.builtin',
+    },
+  },
+}
+```
 
 ## Showcase
-TODO
+### Basic usage
+Basic usage replacing variables `a_0`, `a_1` and `a_2` to `x`, `y` and `z`:
 
-## Trivia
-TODO
+### Swapping things
+Using non-recursive replacements one can swap variables with ease since they are first replaced to temporary placeholders. Toggle the option (see below) to see the difference.
+
+### Pick options interactively
+You can change some options interactively while previewing your changes in the UI.
+
+## TODO
+
+- [ ] Store history of batches replacements and have a telescope picker to chose between them, previewing the list of patterns and replacements.
+- [ ] Possibly calculate the preview asynchronously in case it makes the UI sluggish?
+
+## Etymology
+
+Here are two explanations for the name of the plugin, choose the one you like the most:
+* `muren` stands for "MUltiple REplacements in Neovim".
+* _muren_ is the swedish word for "the wall" and refers to the border between the patterns-buffer and the replacements-buffer.
