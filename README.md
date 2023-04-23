@@ -98,11 +98,24 @@ Pass settings to `require('muren').setup`. The current defaults are:
 ### Basic usage
 Basic usage replacing variables `a_0`, `a_1` and `a_2` to `x`, `y` and `z`:
 
+https://user-images.githubusercontent.com/23341710/233819100-6e18e39e-37bc-42b4-82b4-237fa4eeee25.mp4
+
 ### Swapping things
 Using non-recursive replacements one can swap variables with ease since they are first replaced to temporary placeholders. Toggle the option (see below) to see the difference.
 
+https://user-images.githubusercontent.com/23341710/233819106-8d08cacd-2adc-467c-a784-6f5e59ef6ca1.mp4
+
 ### Pick options interactively
 You can change some options interactively while previewing your changes in the UI.
+
+https://user-images.githubusercontent.com/23341710/233819114-406dcbe0-ec25-45fc-9240-84ba926a6c5e.mp4
+
+Note in particular how things change in the preview.
+
+### Populate with unique previuous search matches
+`:MurenUnique` might initially seem like a random command but something I find very useful. What it does is it finds all the matches of your last search and populates the unique set of these in the patterns pane of the UI. You can them replace all of them in some way but importantly you can do this differently for each unique match.
+
+https://user-images.githubusercontent.com/23341710/233819184-df374312-8947-4b50-baf9-f3136b4d344e.mp4
 
 ## TODO
 
