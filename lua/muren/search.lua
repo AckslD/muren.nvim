@@ -23,16 +23,25 @@ local cmd_silent = function(src)
   pcall(vim.api.nvim_exec2, src, {output = true})
 end
 
+local search_replace = function(pattern, replacement, opts)
+  cmd_silent(string.format(
+    '%%s/%s/%s/%s',
+    pattern,
+    replacement,
+    opts.replace_opt_chars or ''
+  ))
+  vim.opt.hlsearch = false
+end
+
 local multi_replace_recursive = function(buf, patterns, replacements, opts)
   for i, pattern in ipairs(patterns) do
     local replacement = replacements[i] or ''
     vim.api.nvim_buf_call(buf, function()
-      cmd_silent(string.format(
-        '%%s/%s/%s/%s',
+      search_replace(
         pattern,
         replacement,
-        opts.replace_opt_chars or ''
-      ))
+        opts
+      )
     end)
   end
 end
@@ -44,23 +53,21 @@ local multi_replace_non_recursive = function(buf, patterns, replacements, opts)
     local replacement = replacements[i] or ''
     replacement_per_placeholder[placeholder] = replacement
     vim.api.nvim_buf_call(buf, function()
-      cmd_silent(string.format(
-        '%%s/%s/%s/%s',
+      search_replace(
         pattern,
         placeholder,
-        opts.replace_opt_chars or ''
-      ))
+        opts
+      )
     end)
   end
   -- TODO if we would have eg 'c' replace_opt_chars I guess we don't want it here?
   for placeholder, replacement in pairs(replacement_per_placeholder) do
     vim.api.nvim_buf_call(buf, function()
-      cmd_silent(string.format(
-        '%%s/%s/%s/%s',
+      search_replace(
         placeholder,
         replacement,
-        opts.replace_opt_chars or ''
-      ))
+        opts
+      )
     end)
   end
 end
@@ -88,6 +95,7 @@ end
 M.get_unique_last_search_matches = function(opts)
   opts = opts or {}
   cmd_silent(string.format('lvim %s %%', opts.pattern or '//'))
+  vim.opt.hlsearch = false
   local loc_items = vim.fn.getloclist(0)
   local unique_matches = {}
   for _, loc_item in ipairs(loc_items) do
