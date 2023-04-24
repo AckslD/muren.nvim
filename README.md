@@ -135,6 +135,11 @@ Note in particular how things change in the preview.
 
 https://user-images.githubusercontent.com/23341710/233819184-df374312-8947-4b50-baf9-f3136b4d344e.mp4
 
+### Regexes
+There is full support for builtin regex patterns. However this won't work then the `two_step` option is enabled:
+
+https://user-images.githubusercontent.com/23341710/233902113-4b6a33d8-3f6b-4d33-bc46-67e865e0898e.mp4
+
 ## TODO
 
 - [ ] Store history of batches replacements and have a telescope picker to chose between them, previewing the list of patterns and replacements.
