@@ -8,8 +8,9 @@ local find_all_line_matches = function(pattern)
   local flags = 'w'
   local lines = {}
   while true do
-    local line = vim.fn.search(pattern, flags)
-    if line == 0 then
+    local success, line = pcall(vim.fn.search, pattern, flags)
+    vim.opt.hlsearch = false
+    if not success or line == 0 then
       break
     end
     table.insert(lines, line)
