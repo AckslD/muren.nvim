@@ -86,10 +86,10 @@ M.do_replace_with_patterns = function(buf, patterns, replacements)
   if options.values.all_on_line then
     opts.replace_opt_chars = 'g'
   end
-  if options.values.recursive then
-    multi_replace_recursive(buf, patterns, replacements, opts)
-  else
+  if options.values.two_step then
     multi_replace_non_recursive(buf, patterns, replacements, opts)
+  else
+    multi_replace_recursive(buf, patterns, replacements, opts)
   end
 end
 

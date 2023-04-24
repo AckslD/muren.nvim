@@ -57,7 +57,7 @@ FEATURES                                      *muren.nvim-muren.nvim-features*
 
 
 - Define and apply multiple replacements.
-- Toggle between recursive and non-recursive replacements (eg to sway names), see |muren.nvim-showcases|.
+- Toggle between simple and 2-step replacements (eg to swap names), see |muren.nvim-showcases|.
 - Interactively changes options, including which buffer to apply to.
 - Preview changes.
 - Keep patterns and options when toggling ui.
@@ -116,7 +116,7 @@ Pass settings to `require('muren').setup`. The current defaults are:
       -- general
       create_commands = true,
       -- default togglable options
-      recursive = false,
+      two_step = false,
       all_on_line = true,
       preview = true,
       -- keymaps
@@ -135,7 +135,7 @@ Pass settings to `require('muren').setup`. The current defaults are:
       -- options order in ui
       order = {
         'buffer',
-        'recursive',
+        'two_step',
         'all_on_line',
         'preview',
       },
@@ -163,9 +163,9 @@ https://user-images.githubusercontent.com/23341710/233819100-6e18e39e-37bc-42b4-
 
 SWAPPING THINGS ~
 
-Using non-recursive replacements one can swap variables with ease since they
-are first replaced to temporary placeholders. Toggle the option (see below) to
-see the difference.
+Using non-recursive (2-step) replacements one can swap variables with ease
+since they are first replaced to temporary placeholders. Toggle the option (see
+below) to see the difference.
 
 
 https://user-images.githubusercontent.com/23341710/233819106-8d08cacd-2adc-467c-a784-6f5e59ef6ca1.mp4

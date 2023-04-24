@@ -4,7 +4,7 @@ M.default = {
   -- general
   create_commands = true,
   -- default togglable options
-  recursive = false,
+  two_step = false,
   all_on_line = true,
   preview = true,
   -- keymaps
@@ -23,7 +23,7 @@ M.default = {
   -- options order in ui
   order = {
     'buffer',
-    'recursive',
+    'two_step',
     'all_on_line',
     'preview',
   },
