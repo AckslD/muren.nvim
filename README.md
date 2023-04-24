@@ -29,7 +29,7 @@ See [examples](#showcase) below for some screencasts of how this looks like with
 
 ## Features
 * Define and apply multiple replacements.
-* Toggle between recursive and non-recursive replacements (eg to sway names), see [showcases](#showcase).
+* Toggle between simple and 2-step replacements (eg to swap names), see [showcases](#showcase).
 * Interactively changes options, including which buffer to apply to.
 * Preview changes.
 * Keep patterns and options when toggling ui.
@@ -79,7 +79,7 @@ Pass settings to `require('muren').setup`. The current defaults are:
   -- general
   create_commands = true,
   -- default togglable options
-  recursive = false,
+  two_step = false,
   all_on_line = true,
   preview = true,
   -- keymaps
@@ -98,7 +98,7 @@ Pass settings to `require('muren').setup`. The current defaults are:
   -- options order in ui
   order = {
     'buffer',
-    'recursive',
+    'two_step',
     'all_on_line',
     'preview',
   },
@@ -119,7 +119,7 @@ Basic usage replacing variables `a_0`, `a_1` and `a_2` to `x`, `y` and `z`:
 https://user-images.githubusercontent.com/23341710/233819100-6e18e39e-37bc-42b4-82b4-237fa4eeee25.mp4
 
 ### Swapping things
-Using non-recursive replacements one can swap variables with ease since they are first replaced to temporary placeholders. Toggle the option (see below) to see the difference.
+Using non-recursive (2-step) replacements one can swap variables with ease since they are first replaced to temporary placeholders. Toggle the option (see below) to see the difference.
 
 https://user-images.githubusercontent.com/23341710/233819106-8d08cacd-2adc-467c-a784-6f5e59ef6ca1.mp4
 
