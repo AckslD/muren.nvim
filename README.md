@@ -43,6 +43,8 @@ Use your favorite plugin manager, eg with `lazy.nvim`:
 }
 ```
 
+:exclamation: requires nvim 0.9.
+
 ## Usage
 By default the following commands are created:
 
