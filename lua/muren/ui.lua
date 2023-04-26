@@ -113,7 +113,11 @@ local update_preview = function()
   local ui_lines = get_ui_lines()
   local relevant_line_nums = {}
   for _, pattern in ipairs(ui_lines.patterns) do
-    for _, line in ipairs(search.find_all_line_matches_in_buf(options.values.buffer, pattern)) do
+    for _, line in ipairs(search.find_all_line_matches_in_buf(
+      options.values.buffer,
+      pattern,
+      {range = options.values.range}
+    )) do
       relevant_line_nums[line - 1] = true
     end
   end
@@ -125,7 +129,16 @@ local update_preview = function()
     end
   end
   vim.api.nvim_buf_set_lines(bufs.preview, 0, -1, true, relevant_lines)
-  search.do_replace_with_patterns(bufs.preview, ui_lines.patterns, ui_lines.replacements)
+  search.do_replace_with_patterns(
+    bufs.preview,
+    ui_lines.patterns,
+    ui_lines.replacements,
+    {
+      two_step = options.values.two_step,
+      all_on_line = options.values.all_on_line,
+      range = nil,
+    }
+  )
 end
 
 local get_nvim_ui_size = function()
@@ -216,7 +229,16 @@ end
 
 local do_replace = function()
   local lines = get_ui_lines()
-  search.do_replace_with_patterns(options.values.buffer, lines.patterns, lines.replacements)
+  search.do_replace_with_patterns(
+    options.values.buffer,
+    lines.patterns,
+    lines.replacements,
+    {
+      two_step = options.values.two_step,
+      all_on_line = options.values.all_on_line,
+      range = options.values.range,
+    }
+  )
 end
 
 M.open = function(opts)
@@ -309,8 +331,9 @@ M.open = function(opts)
   })
 end
 
-M.open_unique = function()
-  M.open({patterns = search.get_unique_last_search_matches()})
+M.open_unique = function(opts)
+  opts.patterns = search.get_unique_last_search_matches(opts)
+  M.open(opts)
 end
 
 local save_lines = function()
@@ -333,11 +356,11 @@ M.close = function()
   teardown()
 end
 
-M.toggle = function()
+M.toggle = function(opts)
   if is_open then
     M.close()
   else
-    M.open()
+    M.open(opts)
   end
 end
 
