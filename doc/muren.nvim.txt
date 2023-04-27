@@ -74,6 +74,8 @@ Use your favorite plugin manager, eg with `lazy.nvim`:
     }
 <
 
+:exclamation: requires nvim 0.9.
+
 
 USAGE                                            *muren.nvim-muren.nvim-usage*
 
@@ -125,6 +127,8 @@ Pass settings to `require('muren').setup`. The current defaults are:
         toggle_side = '<Tab>',
         toggle_options_focus = '<C-s>',
         toggle_option_under_cursor = '<CR>',
+        scroll_preview_up = '<Up>',
+        scroll_preview_down = '<Down>',
         do_replace = '<CR>',
       },
       -- ui sizes
