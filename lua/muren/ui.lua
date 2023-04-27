@@ -268,6 +268,9 @@ M.open = function(opts)
   bufs.replacements = vim.api.nvim_create_buf(false, true)
   bufs.options = vim.api.nvim_create_buf(false, true)
   bufs.preview = vim.api.nvim_create_buf(false, true)
+  if options.values.filetype_in_preview then
+    vim.api.nvim_buf_set_option(bufs.preview, 'filetype', vim.api.nvim_buf_get_option(0, 'filetype'))
+  end
 
   if opts.patterns then
     vim.api.nvim_buf_set_lines(bufs.patterns, 0, -1, true, opts.patterns)

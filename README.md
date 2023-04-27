@@ -80,6 +80,7 @@ Pass settings to `require('muren').setup`. The current defaults are:
 {
   -- general
   create_commands = true,
+  filetype_in_preview = true,
   -- default togglable options
   two_step = false,
   all_on_line = true,

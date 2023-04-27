@@ -3,6 +3,7 @@ local M = {}
 M.default = {
   -- general
   create_commands = true,
+  filetype_in_preview = true,
   -- default togglable options
   two_step = false,
   all_on_line = true,
@@ -52,6 +53,7 @@ M.populate = function(opts)
   end
   M.values.range = opts.range
   M.values.buffer = vim.api.nvim_get_current_buf()
+  M.values.ft = vim.api.nvim_get_current_buf()
   M.values.total_width = 2 * M.values.patterns_width + M.values.options_width + 4
   M.values.total_height = M.values.patterns_height + M.values.preview_height + 4
 end
