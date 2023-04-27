@@ -145,13 +145,6 @@ There is full support for builtin regex patterns. However this won't work then t
 
 https://user-images.githubusercontent.com/23341710/233902113-4b6a33d8-3f6b-4d33-bc46-67e865e0898e.mp4
 
-## TODO
-
-- [ ] Store history of batches replacements and have a telescope picker to chose between them, previewing the list of patterns and replacements.
-- [ ] Possibly calculate the preview asynchronously in case it makes the UI sluggish?
-- [ ] Support replacements in CWD instead of single buffer.
-- [ ] Apply filetype highlights in preview buffer?
-
 ## Etymology
 
 Here are two explanations for the name of the plugin, choose the one you like the most:
