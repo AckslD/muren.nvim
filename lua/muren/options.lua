@@ -8,6 +8,7 @@ M.default = {
   two_step = false,
   all_on_line = true,
   preview = true,
+  cwd = false,
   -- keymaps
   keys = {
     close = 'q',
@@ -26,6 +27,7 @@ M.default = {
   -- options order in ui
   order = {
     'buffer',
+    'cwd',
     'two_step',
     'all_on_line',
     'preview',

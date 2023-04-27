@@ -62,7 +62,7 @@ local populate_options_buf = function()
   for _, name in ipairs(options.values.order) do
     local value = options.values[name]
     local prefix
-    if value then
+    if (name == 'buffer' and not options.values['cwd']) or (name ~= 'buffer' and value) then
       prefix = ''
       table.insert(highlights, options.values.hl.options.on)
     else
@@ -142,10 +142,10 @@ local update_preview = function()
   end
   vim.api.nvim_buf_set_lines(bufs.preview, 0, -1, true, relevant_lines)
   search.do_replace_with_patterns(
-    bufs.preview,
     ui_lines.patterns,
     ui_lines.replacements,
     {
+      buf = bufs.preview,
       two_step = options.values.two_step,
       all_on_line = options.values.all_on_line,
       range = nil,
@@ -245,10 +245,11 @@ end
 local do_replace = function()
   local lines = get_ui_lines()
   search.do_replace_with_patterns(
-    options.values.buffer,
     lines.patterns,
     lines.replacements,
     {
+      buf = options.values.buffer,
+      cwd = options.values.cwd,
       two_step = options.values.two_step,
       all_on_line = options.values.all_on_line,
       range = options.values.range,

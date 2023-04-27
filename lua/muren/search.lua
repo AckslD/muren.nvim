@@ -33,53 +33,65 @@ local cmd_silent = function(src)
   pcall(vim.api.nvim_exec2, src, {output = true})
 end
 
-local search_replace = function(pattern, replacement, opts)
-  cmd_silent(string.format(
-    '%ss/%s/%s/%s',
-    opts.range or '%',
-    pattern,
-    replacement,
-    opts.replace_opt_chars or ''
-  ))
+local function search_replace(pattern, replacement, opts)
+  if opts.cwd then
+    vim.cmd.vim(string.format('/%s/j%s **/*', pattern, opts.replace_opt_chars))
+    local qitems = vim.fn.getqflist()
+    local bufs = {}
+    for _, qitem in ipairs(qitems) do
+      bufs[qitem.bufnr] = true
+    end
+    for buf, _ in pairs(bufs) do
+      search_replace(pattern, replacement, {
+        buf = buf,
+        replace_opt_chars = opts.replace_opt_chars,
+      })
+    end
+    P(bufs)
+  else
+    vim.api.nvim_buf_call(opts.buf, function()
+      cmd_silent(string.format(
+        '%ss/%s/%s/%s',
+        opts.range or '%',
+        pattern,
+        replacement,
+        opts.replace_opt_chars or ''
+      ))
+    end)
+  end
   vim.opt.hlsearch = false
 end
 
-local multi_replace_recursive = function(buf, patterns, replacements, opts)
+local multi_replace_recursive = function(patterns, replacements, opts)
   for i, pattern in ipairs(patterns) do
     local replacement = replacements[i] or ''
-    vim.api.nvim_buf_call(buf, function()
-      search_replace(
-        pattern,
-        replacement,
-        opts
-      )
-    end)
+    search_replace(
+      pattern,
+      replacement,
+      opts
+    )
   end
 end
 
-local multi_replace_non_recursive = function(buf, patterns, replacements, opts)
+local multi_replace_non_recursive = function(patterns, replacements, opts)
   local replacement_per_placeholder = {}
   for i, pattern in ipairs(patterns) do
     local placeholder = string.format('___MUREN___%d___', i)
     local replacement = replacements[i] or ''
     replacement_per_placeholder[placeholder] = replacement
-    vim.api.nvim_buf_call(buf, function()
-      search_replace(
-        pattern,
-        placeholder,
-        opts
-      )
-    end)
+    search_replace(
+      pattern,
+      placeholder,
+      opts
+    )
   end
   -- TODO if we would have eg 'c' replace_opt_chars I guess we don't want it here?
   for placeholder, replacement in pairs(replacement_per_placeholder) do
-    vim.api.nvim_buf_call(buf, function()
-      search_replace(
-        placeholder,
-        replacement,
-        opts
-      )
-    end)
+    search_replace(
+      placeholder,
+      replacement,
+      opts
+    )
   end
 end
 
@@ -91,8 +103,11 @@ M.find_all_line_matches_in_buf = function(buf, pattern, opts)
   return lines
 end
 
-M.do_replace_with_patterns = function(buf, patterns, replacements, opts)
-  local replace_opts = {}
+M.do_replace_with_patterns = function(patterns, replacements, opts)
+  local replace_opts = {
+    buf = opts.buf,
+    cwd = opts.cwd,
+  }
   if opts.all_on_line then
     replace_opts.replace_opt_chars = 'g'
   end
@@ -102,9 +117,9 @@ M.do_replace_with_patterns = function(buf, patterns, replacements, opts)
     replace_opts.range = '%'
   end
   if opts.two_step then
-    multi_replace_non_recursive(buf, patterns, replacements, replace_opts)
+    multi_replace_non_recursive(patterns, replacements, replace_opts)
   else
-    multi_replace_recursive(buf, patterns, replacements, replace_opts)
+    multi_replace_recursive(patterns, replacements, replace_opts)
   end
 end
 
