@@ -48,6 +48,7 @@ M.populate = function(opts)
       M.values[name] = value
     end
   end
+  M.values.range = opts.range
   M.values.buffer = vim.api.nvim_get_current_buf()
   M.values.total_width = 2 * M.values.patterns_width + M.values.options_width + 4
   M.values.total_height = M.values.patterns_height + M.values.preview_height + 4
