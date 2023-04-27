@@ -90,6 +90,8 @@ Pass settings to `require('muren').setup`. The current defaults are:
     toggle_side = '<Tab>',
     toggle_options_focus = '<C-s>',
     toggle_option_under_cursor = '<CR>',
+    scroll_preview_up = '<Up>',
+    scroll_preview_down = '<Down>',
     do_replace = '<CR>',
   },
   -- ui sizes

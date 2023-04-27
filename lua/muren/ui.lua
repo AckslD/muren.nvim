@@ -106,6 +106,18 @@ local get_ui_lines = function()
   end
 end
 
+local scroll_preview_up = function()
+  vim.api.nvim_buf_call(bufs.preview, function()
+    vim.cmd.normal{'Hzz', bang = true}
+  end)
+end
+
+local scroll_preview_down = function()
+  vim.api.nvim_buf_call(bufs.preview, function()
+    vim.cmd.normal{'Lzz', bang = true}
+  end)
+end
+
 local update_preview = function()
   if not preview_open then
     return
@@ -139,6 +151,9 @@ local update_preview = function()
       range = nil,
     }
   )
+  vim.api.nvim_buf_call(bufs.preview, function()
+    vim.cmd.normal{'gg', bang = true}
+  end)
 end
 
 local get_nvim_ui_size = function()
@@ -307,6 +322,8 @@ M.open = function(opts)
   for _, buf in ipairs({bufs.patterns, bufs.replacements, bufs.options}) do
     vim.keymap.set('n', keys.close, M.close, {buffer = buf})
     vim.keymap.set('n', keys.toggle_options_focus, toggle_options_focus, {buffer = buf})
+    vim.keymap.set('n', keys.scroll_preview_up, scroll_preview_up, {buffer = buf})
+    vim.keymap.set('n', keys.scroll_preview_down, scroll_preview_down, {buffer = buf})
     vim.api.nvim_create_autocmd('WinClosed', {
       callback = function() M.close() end,
       buffer = buf,
