@@ -33,6 +33,7 @@ See [examples](#showcase) below for some screencasts of how this looks like with
 * Interactively changes options, including which buffer to apply to.
 * Preview changes.
 * Keep patterns and options when toggling ui.
+* Change between only current buffer vs all files in `dir` (default to `cwd`) with given file pattern (default to `**/*`).
 
 ## Installation
 Use your favorite plugin manager, eg with `lazy.nvim`:
@@ -61,6 +62,7 @@ The UI uses the following normal mode keymaps (buffer local):
 * `<C-s>`: Swap between _patterns_/_replacements_ and _options_ pane.
 * `<CR>`: Apply replacements (only in _patterns_ or _replacements_ pane).
 * `<CR>`: Toggle/pick options (only in _options_ pane).
+* `<Up>/<Down>`: Scroll preview up/down.
 
 See below for how to configure there.
 
@@ -85,6 +87,8 @@ Pass settings to `require('muren').setup`. The current defaults are:
   two_step = false,
   all_on_line = true,
   preview = true,
+  cwd = false,
+  files = '**/*',
   -- keymaps
   keys = {
     close = 'q',
@@ -98,11 +102,13 @@ Pass settings to `require('muren').setup`. The current defaults are:
   -- ui sizes
   patterns_width = 30,
   patterns_height = 10,
-  options_width = 15,
+  options_width = 20,
   preview_height = 12,
   -- options order in ui
   order = {
     'buffer',
+    'dir',
+    'files',
     'two_step',
     'all_on_line',
     'preview',
@@ -112,6 +118,12 @@ Pass settings to `require('muren').setup`. The current defaults are:
     options = {
       on = '@string',
       off = '@variable.builtin',
+    },
+    preview = {
+      cwd = {
+        path = 'Comment',
+        lnum = 'Number',
+      },
     },
   },
 }
@@ -144,6 +156,10 @@ https://user-images.githubusercontent.com/23341710/233819184-df374312-8947-4b50-
 There is full support for builtin regex patterns. However this won't work then the `two_step` option is enabled:
 
 https://user-images.githubusercontent.com/23341710/233902113-4b6a33d8-3f6b-4d33-bc46-67e865e0898e.mp4
+
+
+### Recursive search-replace in directory
+By either pressing `<CR>` on `dir` or `files` in the options pan you enable search-replace across all files in the `dir`ectory which matches the `files`-pattern:
 
 ## Etymology
 
