@@ -1,6 +1,6 @@
 local M = {}
 
-local find_all_line_matches = function(pattern, opts)
+local find_all_line_matches_in_current_buf = function(pattern, opts)
   local current_cursor = vim.api.nvim_win_get_cursor(0)
   -- TODO take range into account
   local range = opts.range
@@ -33,21 +33,42 @@ local cmd_silent = function(src)
   pcall(vim.api.nvim_exec2, src, {output = true})
 end
 
+local get_grep_matches = function(pattern, opts)
+  local current_cwd = vim.fn.getcwd()
+  vim.cmd.cd(opts.dir)
+  local success = pcall(vim.cmd.vim, string.format(
+    '/%s/j%s %s',
+    pattern,
+    opts.replace_opt_chars or '',
+    opts.files or '**/*'
+  ))
+  vim.cmd.cd(current_cwd)
+  if not success then
+    return {}
+  end
+  return vim.fn.getqflist()
+end
+
+local get_affected_bufs = function(pattern, opts)
+  local unique_bufs = {}
+  for _, qitem in ipairs(get_grep_matches(pattern, opts)) do
+    unique_bufs[qitem.bufnr] = true
+  end
+  local bufs = {}
+  for buf, _ in pairs(unique_bufs) do
+    table.insert(bufs, buf)
+  end
+  return bufs
+end
+
 local function search_replace(pattern, replacement, opts)
   if opts.cwd then
-    vim.cmd.vim(string.format('/%s/j%s **/*', pattern, opts.replace_opt_chars))
-    local qitems = vim.fn.getqflist()
-    local bufs = {}
-    for _, qitem in ipairs(qitems) do
-      bufs[qitem.bufnr] = true
-    end
-    for buf, _ in pairs(bufs) do
+    for _, buf in ipairs(get_affected_bufs(pattern, opts)) do
       search_replace(pattern, replacement, {
         buf = buf,
         replace_opt_chars = opts.replace_opt_chars,
       })
     end
-    P(bufs)
   else
     vim.api.nvim_buf_call(opts.buf, function()
       cmd_silent(string.format(
@@ -95,18 +116,29 @@ local multi_replace_non_recursive = function(patterns, replacements, opts)
   end
 end
 
-M.find_all_line_matches_in_buf = function(buf, pattern, opts)
-  local lines
-  vim.api.nvim_buf_call(buf, function()
-    lines = find_all_line_matches(pattern, opts)
-  end)
-  return lines
+M.find_all_line_matches = function(pattern, opts)
+  local lines_per_buf = {}
+  if opts.cwd then
+    for _, qitem in ipairs(get_grep_matches(pattern, opts)) do
+      if not lines_per_buf[qitem.bufnr] then
+        lines_per_buf[qitem.bufnr] = {}
+      end
+      table.insert(lines_per_buf[qitem.bufnr], qitem.lnum)
+    end
+  else
+    vim.api.nvim_buf_call(opts.buffer, function()
+      lines_per_buf[opts.buffer] = find_all_line_matches_in_current_buf(pattern, opts)
+    end)
+  end
+  return lines_per_buf
 end
 
 M.do_replace_with_patterns = function(patterns, replacements, opts)
   local replace_opts = {
-    buf = opts.buf,
+    buf = opts.buffer,
     cwd = opts.cwd,
+    dir = opts.dir,
+    files = opts.files,
   }
   if opts.all_on_line then
     replace_opts.replace_opt_chars = 'g'
