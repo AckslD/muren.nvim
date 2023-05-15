@@ -157,9 +157,10 @@ There is full support for builtin regex patterns. However this won't work then t
 
 https://user-images.githubusercontent.com/23341710/233902113-4b6a33d8-3f6b-4d33-bc46-67e865e0898e.mp4
 
-
 ### Recursive search-replace in directory
 By either pressing `<CR>` on `dir` or `files` in the options pan you enable search-replace across all files in the `dir`ectory which matches the `files`-pattern:
+
+https://github.com/AckslD/muren.nvim/assets/23341710/f41d5e58-e734-4283-9063-4607bd560f77
 
 ## Etymology
 
