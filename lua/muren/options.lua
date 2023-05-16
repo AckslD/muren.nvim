@@ -19,6 +19,8 @@ M.default = {
     scroll_preview_up = '<Up>',
     scroll_preview_down = '<Down>',
     do_replace = '<CR>',
+    do_undo = '<localleader>u',
+    do_redo = '<localleader>r',
   },
   -- ui sizes
   patterns_width = 30,

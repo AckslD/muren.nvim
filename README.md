@@ -98,6 +98,10 @@ Pass settings to `require('muren').setup`. The current defaults are:
     scroll_preview_up = '<Up>',
     scroll_preview_down = '<Down>',
     do_replace = '<CR>',
+    -- NOTE these are not guaranteed to work, what they do is just apply `:normal! u` vs :normal! <C-r>`
+    -- on the last affected buffers so if you do some edit in these buffers in the meantime it won't do the correct thing
+    do_undo = '<localleader>u',
+    do_redo = '<localleader>r',
   },
   -- ui sizes
   patterns_width = 30,
@@ -161,6 +165,11 @@ https://user-images.githubusercontent.com/23341710/233902113-4b6a33d8-3f6b-4d33-
 By either pressing `<CR>` on `dir` or `files` in the options pan you enable search-replace across all files in the `dir`ectory which matches the `files`-pattern:
 
 https://github.com/AckslD/muren.nvim/assets/23341710/f41d5e58-e734-4283-9063-4607bd560f77
+
+### Undo/redo
+You can also undo/redo replacements:
+
+:warning: these keys are not guaranteed to work, what they do is just apply `:normal! u` vs :normal! <C-r>` on the last affected buffers so if you do some edit in these buffers in the meantime it won't do the correct thing.
 
 ## Etymology
 

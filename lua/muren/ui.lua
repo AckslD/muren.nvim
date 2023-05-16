@@ -7,6 +7,8 @@ local options = require('muren.options')
 local search = require('muren.search')
 
 local last_lines = {}
+local last_edited_bufs
+local last_undoed_bufs
 
 -- TODO should these be global to the module?
 local is_open = false
@@ -121,16 +123,18 @@ local get_ui_lines = function()
   end
 end
 
-local scroll_preview_up = function()
-  vim.api.nvim_buf_call(bufs.preview, function()
-    vim.cmd.normal{'Hzz', bang = true}
+local buf_normal = function(buf, keys)
+  vim.api.nvim_buf_call(buf, function()
+    vim.cmd.normal{vim.api.nvim_replace_termcodes(keys, true, false, true), bang = true}
   end)
 end
 
+local scroll_preview_up = function()
+  buf_normal(bufs.preview, 'Hzz')
+end
+
 local scroll_preview_down = function()
-  vim.api.nvim_buf_call(bufs.preview, function()
-    vim.cmd.normal{'Lzz', bang = true}
-  end)
+  buf_normal(bufs.preview, 'Lzz')
 end
 
 local format_cwd_preview_line = function(line, buf_info)
@@ -232,9 +236,7 @@ local update_preview = function()
       end
     end
   end
-  vim.api.nvim_buf_call(bufs.preview, function()
-    vim.cmd.normal{'gg', bang = true}
-  end)
+  buf_normal(bufs.preview, 'gg')
 end
 
 local get_nvim_ui_size = function()
@@ -262,6 +264,7 @@ local open_preview = function()
     border = {"┏", "━" ,"┓", "┃", "┛", "━", "└", "┃"},
     title = {{'preview', 'Comment'}},
     title_pos = 'center',
+    zindex = 10,
   })
   vim.api.nvim_win_set_option(wins.preview, 'wrap', false)
   preview_open = true
@@ -356,11 +359,36 @@ end
 
 local do_replace = function()
   local lines = get_ui_lines()
-  search.do_replace_with_patterns(
+  last_edited_bufs = search.do_replace_with_patterns(
     lines.patterns,
     lines.replacements,
     options.values
   )
+  last_undoed_bufs = nil
+end
+
+local do_undo = function()
+  if not last_edited_bufs then
+    vim.notify('nothing to undo')
+    return
+  end
+  for buf in pairs(last_edited_bufs) do
+    buf_normal(buf, 'u')
+  end
+  last_undoed_bufs = last_edited_bufs
+  last_edited_bufs = nil
+end
+
+local do_redo = function()
+  if not last_undoed_bufs then
+    vim.notify('nothing to redo')
+    return
+  end
+  for buf in pairs(last_undoed_bufs) do
+    buf_normal(buf, '<C-r>')
+  end
+  last_edited_bufs = last_undoed_bufs
+  last_undoed_bufs = nil
 end
 
 M.open = function(opts)
@@ -396,6 +424,7 @@ M.open = function(opts)
     border = {"┏", "━" ,"┳", "┃", "┻", "━", "┗", "┃"},
     title = {{'patterns', 'Number'}},
     title_pos = 'center',
+    zindex = 10,
   })
   wins.replacements = vim.api.nvim_open_win(bufs.replacements, false, {
     relative = 'editor',
@@ -407,6 +436,7 @@ M.open = function(opts)
     border = {"┳", "━" ,"┳", "┃", "┻", "━", "┻", "┃"},
     title = {{'replacements', 'Number'}},
     title_pos = 'center',
+    zindex = 10,
   })
   other_win[wins.patterns] = wins.replacements
   other_win[wins.replacements] = wins.patterns
@@ -420,6 +450,7 @@ M.open = function(opts)
     border = {"┳", "━" ,"┓", "┃", "┛", "━", "┻", "┃"},
     title = {{'options', 'Comment'}},
     title_pos = 'center',
+    zindex = 10,
   })
   vim.api.nvim_win_set_option(wins.options, 'wrap', false)
   if options.values.preview then
@@ -430,6 +461,8 @@ M.open = function(opts)
   for _, buf in ipairs({bufs.patterns, bufs.replacements, bufs.options}) do
     vim.keymap.set('n', keys.close, M.close, {buffer = buf})
     vim.keymap.set('n', keys.toggle_options_focus, toggle_options_focus, {buffer = buf})
+    vim.keymap.set('n', keys.do_undo, do_undo, {buffer = buf})
+    vim.keymap.set('n', keys.do_redo, do_redo, {buffer = buf})
     vim.keymap.set('n', keys.scroll_preview_up, scroll_preview_up, {buffer = buf})
     vim.keymap.set('n', keys.scroll_preview_down, scroll_preview_down, {buffer = buf})
     vim.api.nvim_create_autocmd('WinClosed', {
