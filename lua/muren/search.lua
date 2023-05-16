@@ -1,5 +1,7 @@
 local M = {}
 
+local nvim_exec2 = vim.api.nvim_exec2 or vim.api.nvim_exec
+
 local find_all_line_matches_in_current_buf = function(pattern, opts)
   local current_cursor = vim.api.nvim_win_get_cursor(0)
   -- TODO take range into account
@@ -30,7 +32,7 @@ local find_all_line_matches_in_current_buf = function(pattern, opts)
 end
 
 local cmd_silent = function(src)
-  pcall(vim.api.nvim_exec2, src, {output = true})
+  pcall(nvim_exec2, src, {output = true})
 end
 
 local get_grep_matches = function(pattern, opts)
