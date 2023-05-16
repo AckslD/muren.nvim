@@ -54,22 +54,21 @@ local get_affected_bufs = function(pattern, opts)
   for _, qitem in ipairs(get_grep_matches(pattern, opts)) do
     unique_bufs[qitem.bufnr] = true
   end
-  local bufs = {}
-  for buf, _ in pairs(unique_bufs) do
-    table.insert(bufs, buf)
-  end
-  return bufs
+  return unique_bufs
 end
 
 local function search_replace(pattern, replacement, opts)
+  local affected_bufs
   if opts.cwd then
-    for _, buf in ipairs(get_affected_bufs(pattern, opts)) do
+    affected_bufs = get_affected_bufs(pattern, opts)
+    for buf, _ in pairs(affected_bufs) do
       search_replace(pattern, replacement, {
         buf = buf,
         replace_opt_chars = opts.replace_opt_chars,
       })
     end
   else
+    affected_bufs = {[opts.buf] = true}
     vim.api.nvim_buf_call(opts.buf, function()
       cmd_silent(string.format(
         '%ss/%s/%s/%s',
@@ -81,30 +80,34 @@ local function search_replace(pattern, replacement, opts)
     end)
   end
   vim.opt.hlsearch = false
+  return affected_bufs
 end
 
 local multi_replace_recursive = function(patterns, replacements, opts)
+  local affected_bufs = {}
   for i, pattern in ipairs(patterns) do
     local replacement = replacements[i] or ''
-    search_replace(
+    affected_bufs = vim.tbl_extend('keep', affected_bufs, search_replace(
       pattern,
       replacement,
       opts
-    )
+    ))
   end
+  return affected_bufs
 end
 
 local multi_replace_non_recursive = function(patterns, replacements, opts)
+  local affected_bufs = {}
   local replacement_per_placeholder = {}
   for i, pattern in ipairs(patterns) do
     local placeholder = string.format('___MUREN___%d___', i)
     local replacement = replacements[i] or ''
     replacement_per_placeholder[placeholder] = replacement
-    search_replace(
+    affected_bufs = vim.tbl_extend('keep', affected_bufs, search_replace(
       pattern,
       placeholder,
       opts
-    )
+    ))
   end
   -- TODO if we would have eg 'c' replace_opt_chars I guess we don't want it here?
   for placeholder, replacement in pairs(replacement_per_placeholder) do
@@ -114,6 +117,7 @@ local multi_replace_non_recursive = function(patterns, replacements, opts)
       opts
     )
   end
+  return affected_bufs
 end
 
 M.find_all_line_matches = function(pattern, opts)
@@ -149,9 +153,9 @@ M.do_replace_with_patterns = function(patterns, replacements, opts)
     replace_opts.range = '%'
   end
   if opts.two_step then
-    multi_replace_non_recursive(patterns, replacements, replace_opts)
+    return multi_replace_non_recursive(patterns, replacements, replace_opts)
   else
-    multi_replace_recursive(patterns, replacements, replace_opts)
+    return multi_replace_recursive(patterns, replacements, replace_opts)
   end
 end
 
