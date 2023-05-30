@@ -249,17 +249,65 @@ local get_nvim_ui_size = function()
   end
 end
 
+local make_ui_positions = function()
+  -- NOTE assumes that options will be populated by options.populate() before this is called,
+  -- as the open_preview function does
+  local vertical_anchor = options.default.vertical_anchor
+  local horizontal_anchor = options.default.horizontal_anchor
+  local vertical_offset = options.default.vertical_offset
+  local horizontal_offset = options.default.horizontal_offset
+  local gheight, gwidth = get_nvim_ui_size()
+  local positions = {
+    row = {
+      top = 0,
+      center = (gheight - options.values.total_height) / 2,
+      bottom = (gheight - options.values.total_height),
+    },
+    col = {
+      left = 0,
+      center = (gwidth - options.values.total_width) / 2,
+      right = (gwidth - options.values.total_width),
+    },
+  }
+  local adjusted_row = positions.row[vertical_anchor] + vertical_offset
+  local adjusted_col = positions.col[horizontal_anchor] + horizontal_offset
+  if adjusted_row < 0 then
+    adjusted_row = positions.row["top"]
+  elseif adjusted_row + options.values.total_height > gheight then
+    adjusted_row = positions.row["bottom"]
+  end
+  if adjusted_col < 0 then
+    adjusted_col = positions.col["left"]
+  elseif adjusted_col + options.values.total_width > gwidth then
+    adjusted_col = positions.col["right"]
+  end
+  return {
+    row = {
+      preview = adjusted_row + options.values.patterns_height + 2,
+      patterns = adjusted_row,
+      replacements = adjusted_row,
+      options = adjusted_row,
+    },
+    col = {
+      preview = adjusted_col,
+      patterns = adjusted_col,
+      replacements = adjusted_col + options.values.patterns_width + 1,
+      options = adjusted_col + 2 * (options.values.patterns_width + 1),
+    },
+  }
+end
+
 local open_preview = function()
   if preview_open then
     return
   end
-  local gheight, gwidth = get_nvim_ui_size()
+  local ui_positions = make_ui_positions()
   wins.preview = vim.api.nvim_open_win(bufs.preview, false, {
     relative = 'editor',
     width = options.values.total_width - 2,
     height = options.values.preview_height,
-    row = (gheight - options.values.total_height) / 2 + options.values.patterns_height + 2,
-    col = (gwidth - options.values.total_width) / 2,
+    row = ui_positions.row.preview,
+    col = ui_positions.col.preview,
     style = 'minimal',
     border = {"┏", "━" ,"┓", "┃", "┛", "━", "└", "┃"},
     title = {{'preview', 'Comment'}},
@@ -412,14 +460,13 @@ M.open = function(opts)
   end
   populate_options_buf()
 
-  local gheight, gwidth = get_nvim_ui_size()
-
+  local positions = make_ui_positions()
   wins.patterns = vim.api.nvim_open_win(bufs.patterns, true, {
     relative = 'editor',
     width = options.values.patterns_width,
     height = options.values.patterns_height,
-    row = (gheight - options.values.total_height) / 2,
-    col = (gwidth - options.values.total_width) / 2,
+    row = positions.row.patterns,
+    col = positions.col.patterns,
     style = 'minimal',
     border = {"┏", "━" ,"┳", "┃", "┻", "━", "┗", "┃"},
     title = {{'patterns', 'Number'}},
@@ -430,8 +477,8 @@ M.open = function(opts)
     relative = 'editor',
     width = options.values.patterns_width,
     height = options.values.patterns_height,
-    row = (gheight - options.values.total_height) / 2,
-    col = (gwidth - options.values.total_width) / 2 + options.values.patterns_width + 1,
+    row = positions.row.replacements,
+    col = positions.col.replacements,
     style = 'minimal',
     border = {"┳", "━" ,"┳", "┃", "┻", "━", "┻", "┃"},
     title = {{'replacements', 'Number'}},
@@ -444,8 +491,8 @@ M.open = function(opts)
     relative = 'editor',
     width = options.values.options_width,
     height = options.values.patterns_height,
-    row = (gheight - options.values.total_height) / 2,
-    col = (gwidth - options.values.total_width) / 2 + 2 * (options.values.patterns_width + 1),
+    row = positions.row.options,
+    col = positions.col.options,
     style = 'minimal',
     border = {"┳", "━" ,"┓", "┃", "┛", "━", "┻", "┃"},
     title = {{'options', 'Comment'}},
