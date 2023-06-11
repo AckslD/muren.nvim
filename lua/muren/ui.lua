@@ -261,10 +261,10 @@ local make_ui_positions = function(opts)
     left = 0,
     right = (gwidth - opts.total_width),
   }
-  local v_anchor = anchors[opts.vertical_anchor] or anchors.center_row
-  local h_anchor = anchors[opts.horizontal_anchor] or anchors.center_col
-  local v_offset = (opts.vertical_offset or 0) * (v_anchor == anchors.bottom and -1 or 1)
-  local h_offset = (opts.horizontal_offset or 0) * (h_anchor == anchors.right and -1 or 1)
+
+  local v_anchor, h_anchor = anchors[opts.vertical_anchor], anchors[opts.horizontal_anchor]
+  local v_offset = opts.vertical_offset * (v_anchor == anchors.bottom and -1 or 1)
+  local h_offset = opts.horizontal_offset * (h_anchor == anchors.right and -1 or 1)
   local adjusted_row = math.max(anchors.top, math.min(v_anchor + v_offset, anchors.bottom))
   local adjusted_col = math.max(anchors.left, math.min(h_anchor + h_offset, anchors.right))
   return {
