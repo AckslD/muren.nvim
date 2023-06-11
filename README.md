@@ -109,9 +109,9 @@ Pass settings to `require('muren').setup`. The current defaults are:
   options_width = 20,
   preview_height = 12,
   -- window positions
-  vertical_anchor = "center", -- "top" | "center" | "bottom
-  horizontal_anchor = "center", -- "left" | "center" | "right"
-  vertical_offset = 0,
+  vertical_anchor = nil, -- "top" | "bottom", else row is centered
+  horizontal_anchor = nil, -- "left" | "right", else col is centered
+  vertical_offset = 0,  -- offsets are relative to anchors
   horizontal_offset = 0,
   -- options order in ui
   order = {

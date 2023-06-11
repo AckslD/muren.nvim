@@ -249,53 +249,29 @@ local get_nvim_ui_size = function()
   end
 end
 
-local make_ui_positions = function()
+local make_ui_positions = function(opts)
   -- NOTE assumes that options will be populated by options.populate() before this is called,
   -- as the open_preview function does
-  local vertical_anchor = options.default.vertical_anchor
-  local horizontal_anchor = options.default.horizontal_anchor
-  local vertical_offset = options.default.vertical_offset
-  local horizontal_offset = options.default.horizontal_offset
   local gheight, gwidth = get_nvim_ui_size()
-  local positions = {
-    row = {
-      top = 0,
-      center = (gheight - options.values.total_height) / 2,
-      bottom = (gheight - options.values.total_height),
-    },
-    col = {
-      left = 0,
-      center = (gwidth - options.values.total_width) / 2,
-      right = (gwidth - options.values.total_width),
-    },
+  local anchors = {
+    center_row = (gheight - opts.total_height) / 2,
+    center_col = (gwidth - opts.total_width) / 2,
+    top = 0,
+    bottom = (gheight - opts.total_height),
+    left = 0,
+    right = (gwidth - opts.total_width),
   }
-  horizontal_offset = horizontal_anchor == "right" and -horizontal_offset or horizontal_offset
-  vertical_offset = vertical_anchor == "bottom" and -vertical_offset or vertical_offset
-  local adjusted_row = positions.row[vertical_anchor] + vertical_offset
-  local adjusted_col = positions.col[horizontal_anchor] + horizontal_offset
-  if adjusted_row < 0 then
-    adjusted_row = positions.row["top"]
-  elseif adjusted_row + options.values.total_height > gheight then
-    adjusted_row = positions.row["bottom"]
-  end
-  if adjusted_col < 0 then
-    adjusted_col = positions.col["left"]
-  elseif adjusted_col + options.values.total_width > gwidth then
-    adjusted_col = positions.col["right"]
-  end
+  local v_anchor = anchors[opts.vertical_anchor] or anchors.center_row
+  local h_anchor = anchors[opts.horizontal_anchor] or anchors.center_col
+  local v_offset = (opts.vertical_offset or 0) * (v_anchor == anchors.bottom and -1 or 1)
+  local h_offset = (opts.horizontal_offset or 0) * (h_anchor == anchors.right and -1 or 1)
+  local adjusted_row = math.max(anchors.top, math.min(v_anchor + v_offset, anchors.bottom))
+  local adjusted_col = math.max(anchors.left, math.min(h_anchor + h_offset, anchors.right))
   return {
-    row = {
-      preview = adjusted_row + options.values.patterns_height + 2,
-      patterns = adjusted_row,
-      replacements = adjusted_row,
-      options = adjusted_row,
-    },
-    col = {
-      preview = adjusted_col,
-      patterns = adjusted_col,
-      replacements = adjusted_col + options.values.patterns_width + 1,
-      options = adjusted_col + 2 * (options.values.patterns_width + 1),
-    },
+    patterns = { row = adjusted_row, col = adjusted_col },
+    preview = { row = adjusted_row + opts.patterns_height + 2, col = adjusted_col },
+    replacements = { row = adjusted_row, col = adjusted_col + opts.patterns_width + 1 },
+    options = { row = adjusted_row, col = adjusted_col + 2 * (opts.patterns_width + 1) },
   }
 end
 
@@ -303,13 +279,13 @@ local open_preview = function()
   if preview_open then
     return
   end
-  local ui_positions = make_ui_positions()
+  local ui_positions = make_ui_positions(options.values)
   wins.preview = vim.api.nvim_open_win(bufs.preview, false, {
     relative = 'editor',
     width = options.values.total_width - 2,
     height = options.values.preview_height,
-    row = ui_positions.row.preview,
-    col = ui_positions.col.preview,
+    row = ui_positions.preview.row,
+    col = ui_positions.preview.col,
     style = 'minimal',
     border = {"┏", "━" ,"┓", "┃", "┛", "━", "└", "┃"},
     title = {{'preview', 'Comment'}},
@@ -462,13 +438,13 @@ M.open = function(opts)
   end
   populate_options_buf()
 
-  local positions = make_ui_positions()
+  local ui_positions = make_ui_positions(options.values)
   wins.patterns = vim.api.nvim_open_win(bufs.patterns, true, {
     relative = 'editor',
     width = options.values.patterns_width,
     height = options.values.patterns_height,
-    row = positions.row.patterns,
-    col = positions.col.patterns,
+    row = ui_positions.patterns.row,
+    col = ui_positions.patterns.col,
     style = 'minimal',
     border = {"┏", "━" ,"┳", "┃", "┻", "━", "┗", "┃"},
     title = {{'patterns', 'Number'}},
@@ -479,8 +455,8 @@ M.open = function(opts)
     relative = 'editor',
     width = options.values.patterns_width,
     height = options.values.patterns_height,
-    row = positions.row.replacements,
-    col = positions.col.replacements,
+    row = ui_positions.replacements.row,
+    col = ui_positions.replacements.col,
     style = 'minimal',
     border = {"┳", "━" ,"┳", "┃", "┻", "━", "┻", "┃"},
     title = {{'replacements', 'Number'}},
@@ -493,8 +469,8 @@ M.open = function(opts)
     relative = 'editor',
     width = options.values.options_width,
     height = options.values.patterns_height,
-    row = positions.row.options,
-    col = positions.col.options,
+    row = ui_positions.options.row,
+    col = ui_positions.options.col,
     style = 'minimal',
     border = {"┳", "━" ,"┓", "┃", "┛", "━", "┻", "┃"},
     title = {{'options', 'Comment'}},

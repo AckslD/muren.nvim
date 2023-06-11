@@ -27,11 +27,6 @@ M.default = {
   patterns_height = 10,
   options_width = 20,
   preview_height = 12,
-  -- window positions
-  vertical_anchor = "center", -- "top" | "center" | "bottom
-  horizontal_anchor = "center", -- "left" | "center" | "right"
-  vertical_offset = 0,
-  horizontal_offset = 0,
   -- options order in ui
   order = {
     'buffer',
