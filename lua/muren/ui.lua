@@ -269,6 +269,8 @@ local make_ui_positions = function()
       right = (gwidth - options.values.total_width),
     },
   }
+  horizontal_offset = horizontal_anchor == "right" and -horizontal_offset or horizontal_offset
+  vertical_offset = vertical_anchor == "bottom" and -vertical_offset or vertical_offset
   local adjusted_row = positions.row[vertical_anchor] + vertical_offset
   local adjusted_col = positions.col[horizontal_anchor] + horizontal_offset
   if adjusted_row < 0 then
