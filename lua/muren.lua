@@ -24,13 +24,15 @@ M.setup = function(opts)
     MurenUnique = { api.open_unique_ui, true },
   }
 
-
   local create_muren_commands = function()
     for name, muren_cmd in pairs(muren_commands) do
       local muren_api, range = unpack(muren_cmd)
       vim.api.nvim_create_user_command(name, function(args)
         local anchor, vertical_offset, horizontal_offset = unpack(args.fargs)
         muren_api({
+          range = args.range,
+          line1 = args.line1,
+          line2 = args.line2,
           anchor = anchor,
           vertical_offset = vertical_offset,
           horizontal_offset = horizontal_offset,
