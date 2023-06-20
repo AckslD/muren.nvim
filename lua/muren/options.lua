@@ -61,14 +61,6 @@ end
 
 M.values = {}
 
-local get_range = function(opts)
-  local range
-  if opts.range == 2 then
-    range = {start = opts.line1, _end = opts.line2}
-  end
-  return range
-end
-
 local check_anchor_value = function(anchor)
   local anchor_positions = require('muren').anchor_positions
   if anchor == 'center' or vim.tbl_contains(anchor_positions, anchor) then
@@ -90,7 +82,7 @@ M.populate = function(opts)
     end
   end
   local anchor = check_anchor_value(opts.anchor or M.default.anchor)
-  M.values.range = get_range(opts)
+  M.values.range = opts.range
   M.values.buffer = vim.api.nvim_get_current_buf()
   M.values.dir = vim.fn.getcwd()
   M.values.ft = vim.api.nvim_get_current_buf()
