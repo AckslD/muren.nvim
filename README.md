@@ -76,6 +76,15 @@ You can also access this using lua as the following functions:
 * `require('muren.api').open_fresh_ui`
 * `require('muren.api').open_unique_ui`
 
+Muren's commands and exposed functions take optional arguments to position the ui windows by anchor and offset (command completion available), e.g.:
+
+`:MurenOpen top` or
+`:MurenToggle top_left 5 10` (anchor, vertical offset, horizontal offset)
+
+```lua
+require('muren.api').open_ui({anchor = "top_left", vertical_offset = 5, horizontal_offset = 10})
+```
+
 ## Configuration
 Pass settings to `require('muren').setup`. The current defaults are:
 ```lua
@@ -108,6 +117,11 @@ Pass settings to `require('muren').setup`. The current defaults are:
   patterns_height = 10,
   options_width = 20,
   preview_height = 12,
+  -- window positions
+  anchor = 'center', -- Set to one of:
+  -- 'center' | 'top' | 'bottom' | 'left' | 'right' | 'top_left' | 'top_right' | 'bottom_left' | 'bottom_right'
+  vertical_offset = 0,  -- offsets are relative to anchors
+  horizontal_offset = 0,
   -- options order in ui
   order = {
     'buffer',

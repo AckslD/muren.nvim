@@ -8,8 +8,14 @@ local get_range = function(opts)
   return range
 end
 
+local get_opts = function(opts)
+  opts = opts or {}
+  opts.range = get_range(opts)
+  return opts
+end
+
 M.open_ui = function(opts)
-  require('muren.ui').open({range = get_range(opts)})
+  require('muren.ui').open(get_opts(opts))
 end
 
 M.close_ui = function()
@@ -17,15 +23,17 @@ M.close_ui = function()
 end
 
 M.toggle_ui = function(opts)
-  require('muren.ui').toggle({range = get_range(opts)})
+  require('muren.ui').toggle(get_opts(opts))
 end
 
 M.open_fresh_ui = function(opts)
-  require('muren.ui').open({fresh = true, range = get_range(opts)})
+  opts = get_opts(opts)
+  opts.fresh = true
+  require('muren.ui').open(opts)
 end
 
 M.open_unique_ui = function(opts)
-  require('muren.ui').open_unique({range = get_range(opts)})
+  require('muren.ui').open_unique(get_opts(opts))
 end
 
 return M

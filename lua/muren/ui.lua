@@ -249,17 +249,43 @@ local get_nvim_ui_size = function()
   end
 end
 
+local make_ui_positions = function(opts)
+  -- NOTE assumes that options will be populated by options.populate() before this is called,
+  -- as the open_preview function does
+  local gheight, gwidth = get_nvim_ui_size()
+  local anchors = {
+    center_row = (gheight - opts.total_height) / 2,
+    center_col = (gwidth - opts.total_width) / 2,
+    top = 0,
+    bottom = (gheight - opts.total_height),
+    left = 0,
+    right = (gwidth - opts.total_width),
+  }
+
+  local v_anchor, h_anchor = anchors[opts.vertical_anchor], anchors[opts.horizontal_anchor]
+  local v_offset = opts.vertical_offset * (v_anchor == anchors.bottom and -1 or 1)
+  local h_offset = opts.horizontal_offset * (h_anchor == anchors.right and -1 or 1)
+  local adjusted_row = math.max(anchors.top, math.min(v_anchor + v_offset, anchors.bottom))
+  local adjusted_col = math.max(anchors.left, math.min(h_anchor + h_offset, anchors.right))
+  return {
+    patterns = { row = adjusted_row, col = adjusted_col },
+    preview = { row = adjusted_row + opts.patterns_height + 2, col = adjusted_col },
+    replacements = { row = adjusted_row, col = adjusted_col + opts.patterns_width + 1 },
+    options = { row = adjusted_row, col = adjusted_col + 2 * (opts.patterns_width + 1) },
+  }
+end
+
 local open_preview = function()
   if preview_open then
     return
   end
-  local gheight, gwidth = get_nvim_ui_size()
+  local ui_positions = make_ui_positions(options.values)
   wins.preview = vim.api.nvim_open_win(bufs.preview, false, {
     relative = 'editor',
     width = options.values.total_width - 2,
     height = options.values.preview_height,
-    row = (gheight - options.values.total_height) / 2 + options.values.patterns_height + 2,
-    col = (gwidth - options.values.total_width) / 2,
+    row = ui_positions.preview.row,
+    col = ui_positions.preview.col,
     style = 'minimal',
     border = {"┏", "━" ,"┓", "┃", "┛", "━", "└", "┃"},
     title = {{'preview', 'Comment'}},
@@ -412,14 +438,13 @@ M.open = function(opts)
   end
   populate_options_buf()
 
-  local gheight, gwidth = get_nvim_ui_size()
-
+  local ui_positions = make_ui_positions(options.values)
   wins.patterns = vim.api.nvim_open_win(bufs.patterns, true, {
     relative = 'editor',
     width = options.values.patterns_width,
     height = options.values.patterns_height,
-    row = (gheight - options.values.total_height) / 2,
-    col = (gwidth - options.values.total_width) / 2,
+    row = ui_positions.patterns.row,
+    col = ui_positions.patterns.col,
     style = 'minimal',
     border = {"┏", "━" ,"┳", "┃", "┻", "━", "┗", "┃"},
     title = {{'patterns', 'Number'}},
@@ -430,8 +455,8 @@ M.open = function(opts)
     relative = 'editor',
     width = options.values.patterns_width,
     height = options.values.patterns_height,
-    row = (gheight - options.values.total_height) / 2,
-    col = (gwidth - options.values.total_width) / 2 + options.values.patterns_width + 1,
+    row = ui_positions.replacements.row,
+    col = ui_positions.replacements.col,
     style = 'minimal',
     border = {"┳", "━" ,"┳", "┃", "┻", "━", "┻", "┃"},
     title = {{'replacements', 'Number'}},
@@ -444,8 +469,8 @@ M.open = function(opts)
     relative = 'editor',
     width = options.values.options_width,
     height = options.values.patterns_height,
-    row = (gheight - options.values.total_height) / 2,
-    col = (gwidth - options.values.total_width) / 2 + 2 * (options.values.patterns_width + 1),
+    row = ui_positions.options.row,
+    col = ui_positions.options.col,
     style = 'minimal',
     border = {"┳", "━" ,"┓", "┃", "┛", "━", "┻", "┃"},
     title = {{'options', 'Comment'}},
