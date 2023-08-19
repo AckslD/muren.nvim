@@ -6,8 +6,9 @@ local find_all_line_matches_in_current_buf = function(pattern, opts)
   local current_cursor = vim.api.nvim_win_get_cursor(0)
   -- TODO take range into account
   local range = opts.range
-  if range then
-    vim.cmd(string.format('%d', range.start))
+  if range and range.start > 1 then
+    vim.cmd(string.format('%d', range.start - 1))
+    vim.cmd('normal $')
   else
     vim.cmd('normal G$')
   end
