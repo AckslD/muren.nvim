@@ -15,14 +15,12 @@ local find_all_line_matches_in_current_buf = function(pattern, opts)
   local flags = 'w'
   local lines = {}
   while true do
-    local success, line
-    if range then
-      success, line = pcall(vim.fn.search, pattern, flags, range._end)
-    else
-      success, line = pcall(vim.fn.search, pattern, flags)
-    end
+    local success, line = pcall(vim.fn.search, pattern, flags)
     vim.opt.hlsearch = false
     if not success or line == 0 then
+      break
+    end
+    if range and line > range._end then
       break
     end
     table.insert(lines, line)
